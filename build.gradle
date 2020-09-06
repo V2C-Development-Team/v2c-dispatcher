@@ -1,0 +1,46 @@
+plugins {
+  id "com.github.johnrengelman.shadow" version "5.2.0"
+}
+
+apply plugin: 'java-library'
+apply plugin: 'eclipse'
+
+repositories {
+  jcenter()
+}
+
+group = prjGroup
+version = prjVer
+sourceCompatibility = prjCompat
+targetCompatibility = prjCompat
+
+dependencies {
+  implementation 'com.axonibyte.bonemesh:BoneMesh:2.0.1'
+  implementation 'com.sparkjava:spark-core:2.9.2'
+  implementation 'commons-cli:commons-cli:1.4'
+  implementation 'org.json:json:20200518'
+  implementation 'org.slf4j:slf4j-simple:1.7.30'
+  testImplementation 'org.easymock:easymock:4.0.2'
+  testImplementation 'junit:junit:4.13'
+}
+
+eclipse {
+  classpath {
+    downloadJavadoc = true
+    downloadSources = true
+  }
+}
+
+jar {
+  manifest {
+    attributes 'Main-Class': prjGroup + '.' + prjMain
+  }
+}
+
+shadowJar {
+  shadowJar {
+    baseName = prjName
+    classifier = null
+    version = null
+  }
+}
