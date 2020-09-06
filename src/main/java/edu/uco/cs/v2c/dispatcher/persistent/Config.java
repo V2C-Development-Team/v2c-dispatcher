@@ -1,7 +1,20 @@
 /*
- * Original work copyright (c) 2019 Axonibyte Innovations, LLC. All rights reserved.
+ * Copyright (c) 2020 V2C Development Team. All rights reserved.
+ * Licensed under the Version 0.0.1 of the V2C License (the "License").
+ * You may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at <https://tinyurl.com/v2c-license>.
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions 
+ * limitations under the License.
+ * 
+ * THIS FILE HAS BEEN MODIFIED. ORIGINAL WORK ADHERES TO THE FOLLOWING NOTICE.
+ * 
+ * Copyright (c) 2019 Axonibyte Innovations, LLC. All rights reserved.
  *
- *   Original work Licensed under the Apache License, Version 2.0 (the "License");
+ *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
  *   You may obtain a copy of the License at
  *
@@ -12,14 +25,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * 
- * Modifications, including integration with the rest of the Software where applicable,
- * are proprietary. Modifications copyright (c) 2019 Tritaurian Holdings, Incorporated.
- * The original source from which this Software was derived is covered under terms
- * relating to "Background Technology" in the applicable written and executed
- * contract(s). 
  */
-
 package edu.uco.cs.v2c.dispatcher.persistent;
 
 import org.json.JSONException;
