@@ -17,13 +17,9 @@
 package edu.uco.cs.v2c.dispatcher.net;
 
 import static spark.Spark.before;
-import static spark.Spark.delete;
 import static spark.Spark.get;
 import static spark.Spark.options;
-import static spark.Spark.patch;
 import static spark.Spark.port;
-import static spark.Spark.post;
-import static spark.Spark.put;
 import static spark.Spark.staticFiles;
 import static spark.Spark.stop;
 import static spark.Spark.webSocket;
@@ -103,27 +99,10 @@ public class APIDriver implements Runnable {
       return "OK";
     });
     
-    for(Endpoint endpoint : endpoints) { // iterate through initialized pages and determine the appropriate HTTP request types
-      for(HTTPMethod method : endpoint.getHTTPMethods()) {
-        switch(method) {
-        case DELETE:
-          delete(endpoint.getRoute(), endpoint::onRequest);
-          break;
-        case GET:
-          get(endpoint.getRoute(), endpoint::onRequest);
-          break;
-        case PATCH:
-          patch(endpoint.getRoute(), endpoint::onRequest);
-          break;
-        case POST:
-          post(endpoint.getRoute(), endpoint::onRequest);
-          break;
-        case PUT:
-          put(endpoint.getRoute(), endpoint::onRequest);
-          break;
-        }
-      }
-    }
+    // iterate through initialized pages and determine the appropriate HTTP request types
+    for(Endpoint endpoint : endpoints)
+      for(HTTPMethod method : endpoint.getHTTPMethods())
+        method.getSparkMethod().accept(endpoint.getRoute(), endpoint::onRequest);
     
     // this is a patch because the WebSocket route overrides Spark.notFound 
     get("*", (req, res) -> {

@@ -16,6 +16,10 @@
 
 package edu.uco.cs.v2c.dispatcher.net.restful;
 
+import java.util.function.BiConsumer;
+
+import spark.Route;
+
 /**
  * HTTP request methods.
  * 
@@ -26,26 +30,41 @@ public enum HTTPMethod {
   /**
    * HTTP DELETE method.
    */
-  DELETE,
+  DELETE(spark.Spark::delete),
   
   /**
    * HTTP GET method.
    */
-  GET,
+  GET(spark.Spark::get),
   
   /**
    * HTTP PATCH method.
    */
-  PATCH,
+  PATCH(spark.Spark::patch),
   
   /**
    * HTTP POST method.
    */
-  POST,
+  POST(spark.Spark::post),
   
   /**
    * HTTP PUT method.
    */
-  PUT
+  PUT(spark.Spark::put);
+  
+  private BiConsumer<String, Route> sparkMethod = null;
+  
+  private HTTPMethod(BiConsumer<String, Route> sparkMethod) {
+    this.sparkMethod = sparkMethod;
+  }
+  
+  /**
+   * Retrieves the Spark method associated with this HTTPMethod.
+   * 
+   * @return the appropriate BiConsumer
+   */
+  public BiConsumer<String, Route> getSparkMethod() {
+    return sparkMethod;
+  }
   
 }
