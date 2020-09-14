@@ -49,7 +49,45 @@ public class IncomingPayload {
    */
   public static enum IncomingAction {
     
+    /**
+     * Indicates that the payload regards some listener that is requesting to
+     * be registered on the network.
+     */
+    REGISTER_LISTENER,
+    
+    /**
+     * Indicates that the payload regards some listener that is requesting to
+     * be deregistered on the network.
+     */
+    DEREGISTER_LISTENER,
+    
+    /**
+     * Indicates that the payload contains some message that needs to be routed
+     * to another module in the system. The message in question will generally
+     * regard some application statistic or event.
+     */
+    DISPATCH_MESSAGE,
+    
+    /**
+     * Indicates that the payload contains some raw partial voice transcription
+     * that potentially needs to be routed to some additional module.
+     */
+    DISPATCH_COMMAND,
+    
+    /**
+     * Indicates that the payload contains some default configuration for a
+     * particular application in question.
+     */
+    REGISTER_CONFIGURATION,
+    
+    /**
+     * Indicates that the payload contains some updated configuration that
+     * another module should apply.
+     */
+    UPDATE_CONFIGURATION
   }
+  
+  protected static final String ACTION_VAR = "action";
   
   protected IncomingAction action = null;
   protected JSONObject raw = null;

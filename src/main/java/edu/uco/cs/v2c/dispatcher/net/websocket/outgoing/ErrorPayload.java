@@ -31,9 +31,10 @@ package edu.uco.cs.v2c.dispatcher.net.websocket.outgoing;
 import org.json.JSONObject;
 
 import edu.uco.cs.v2c.dispatcher.net.websocket.MalformedPayloadException;
+import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.OutgoingPayload.OutgoingAction;
 
 /**
- * Encapsulates the outgoing {@link OutgoingPayload.OutgoingAction#WEBSOCKET_ERROR} payload.
+ * Encapsulates the outgoing {@link OutgoingAction#WEBSOCKET_ERROR} payload.
  * 
  * @author Caleb L. Power
  */

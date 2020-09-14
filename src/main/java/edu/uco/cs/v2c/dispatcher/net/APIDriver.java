@@ -52,7 +52,7 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.WebSocketHandler;
 public class APIDriver implements Runnable {
   
   private static final String RESPONDER_STATIC_FOLDER = ".";
-  private static final String WEBSOCKET_ROUTE = "/socket";
+  private static final String WEBSOCKET_ROUTE = "/v1/messages";
   
   private int port; // the port that the front end should run on
   private Endpoint endpoints[] = null; // the pages that will be accessible
