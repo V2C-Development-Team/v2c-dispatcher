@@ -29,6 +29,11 @@
 package edu.uco.cs.v2c.dispatcher.net.websocket;
 
 import java.io.IOException;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
@@ -38,7 +43,14 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import edu.uco.cs.v2c.dispatcher.V2CDispatcher;
+import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.DeregisterListenerPayload;
+import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.DispatchCommandPayload;
+import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.DispatchMessagePayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.IncomingPayload.IncomingAction;
+import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.RegisterConfigurationPayload;
+import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.RegisterListenerPayload;
+import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.UpdateConfigurationPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
 
 /**
@@ -46,7 +58,11 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
  * 
  * @author Caleb L. Power
  */
-@WebSocket public class WebSocketHandler {
+@WebSocket public class WebSocketHandler implements Runnable {
+  
+  private static LinkedList<Entry<Session, JSONObject>> queue = new LinkedList<>();
+  private static List<Session> sessions = new CopyOnWriteArrayList<>();
+  private static Thread instance = null;
   
   /**
    * Adds a session to the broadcast pool.
@@ -54,7 +70,14 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
    * @param session the session
    */
   @OnWebSocketConnect public void onConnect(Session session) {
+    if(instance == null) {
+      instance = new Thread(this);
+      instance.setDaemon(false);
+      instance.start();
+    }
+    
     // TODO ask session to identify itself
+    sessions.add(session);
   }
   
   /**
@@ -66,6 +89,7 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
    */
   @OnWebSocketClose public void onDisconnect(Session session, int statusCode, String reason) {
     // TODO remove session from memory banks
+    sessions.remove(session);
   }
   
   /**
@@ -83,11 +107,41 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
         IncomingAction action = IncomingAction.valueOf(json.getString("action"));
         
         switch(action) {
-        // TODO: add incoming actions
+        case DEREGISTER_LISTENER: {
+          new DeregisterListenerPayload(json);
+          break;
+        }
+        
+        case DISPATCH_COMMAND: {
+          new DispatchCommandPayload(json);
+          break;
+        }
+        
+        case DISPATCH_MESSAGE: {
+          new DispatchMessagePayload(json);
+          break;
+        }
+        
+        case REGISTER_CONFIGURATION: {
+          new RegisterConfigurationPayload(json);
+          break;
+        }
+        
+        case REGISTER_LISTENER: {
+          new RegisterListenerPayload(json);
+          break;
+        }
+        
+        case UPDATE_CONFIGURATION: {
+          new UpdateConfigurationPayload(json);
+          break;
+        }
         
         default:
           throw new PayloadHandlingException(action, "Unexpected action.");
         }
+        
+        broadcast(json); // XXX this echoes incoming well-formed messages; needs to be removed in favor of a routing mechanism
       } catch(PayloadHandlingException e) { // TODO uncomment this
         ErrorPayload response = new ErrorPayload()
             .setInfo(e.getMessage())
@@ -109,6 +163,49 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
     }
   }
   
-  // TODO we need code here that will send and/or broadcasts to target sessions
+  /**
+   * Queues a broadcast to all sessions.
+   * 
+   * @param payload the payload
+   */
+  public static void broadcast(JSONObject payload) {
+    for(Session session : sessions)
+      dispatch(session, payload);
+  }
+  
+  /**
+   * Queues a broadcast to a particular session.
+   * 
+   * @param session the session
+   * @param payload the payload
+   */
+  public static void dispatch(Session session, JSONObject payload) {
+    synchronized(queue) {
+      queue.add(new SimpleEntry<>(session, payload));
+      queue.notifyAll();
+    }
+  }
+  
+  /**
+   * {@inheritDoc}
+   */
+  @Override public void run() {
+    try {
+      while(!instance.isInterrupted()) {
+        Entry<Session, JSONObject> entry = null;
+        
+        synchronized(queue) {
+          while(queue.isEmpty()) queue.wait();
+          entry = queue.remove(0);
+        }
+        
+        try {
+          entry.getKey().getRemote().sendString(entry.getValue().toString());
+        } catch(IOException e) {
+          V2CDispatcher.getLogger().logError("WEBSOCKET HANDLER", e.getMessage());
+        }
+      }
+    } catch(InterruptedException e) { }
+  }
   
 }
