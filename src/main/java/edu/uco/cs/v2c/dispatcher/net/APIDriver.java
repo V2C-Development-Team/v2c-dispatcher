@@ -66,6 +66,8 @@ public class APIDriver implements Runnable {
    * @param allowedOrigins the allowed origins for CORS
    */
   private APIDriver(int port, String allowedOrigins) {
+    System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "ERROR");
+    
     this.allowedOrigins = allowedOrigins;
     this.port = port;
     
