@@ -29,6 +29,11 @@
 package edu.uco.cs.v2c.dispatcher.net.websocket;
 
 import java.io.IOException;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
@@ -38,7 +43,14 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import edu.uco.cs.v2c.dispatcher.V2CDispatcher;
+import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.DeregisterListenerPayload;
+import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.DispatchCommandPayload;
+import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.DispatchMessagePayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.IncomingPayload.IncomingAction;
+import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.RegisterConfigurationPayload;
+import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.RegisterListenerPayload;
+import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.UpdateConfigurationPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
 
 /**
@@ -46,7 +58,13 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
  * 
  * @author Caleb L. Power
  */
-@WebSocket public class WebSocketHandler {
+@WebSocket public class WebSocketHandler implements Runnable {
+  
+  private static final String LOG_LABEL = "WEBSOCKET HANDLER";
+  
+  private static LinkedList<Entry<Session, JSONObject>> queue = new LinkedList<>();
+  private static List<Session> sessions = new CopyOnWriteArrayList<>();
+  private static Thread instance = null;
   
   /**
    * Adds a session to the broadcast pool.
@@ -54,7 +72,19 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
    * @param session the session
    */
   @OnWebSocketConnect public void onConnect(Session session) {
+    V2CDispatcher.getLogger().logInfo(LOG_LABEL,
+        String.format("%1$s:%2$d connected via WebSocket.",
+            session.getRemoteAddress().getHostString(),
+            session.getRemoteAddress().getPort()));
+    
+    if(instance == null) {
+      instance = new Thread(this);
+      instance.setDaemon(false);
+      instance.start();
+    }
+    
     // TODO ask session to identify itself
+    sessions.add(session);
   }
   
   /**
@@ -65,7 +95,13 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
    * @param reason the reason that the session closed
    */
   @OnWebSocketClose public void onDisconnect(Session session, int statusCode, String reason) {
+    V2CDispatcher.getLogger().logInfo(LOG_LABEL,
+        String.format("%1$s:%2$d disconnected from WebSocket.",
+            session.getRemoteAddress().getHostString(),
+            session.getRemoteAddress().getPort()));
+    
     // TODO remove session from memory banks
+    sessions.remove(session);
   }
   
   /**
@@ -83,15 +119,51 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
         IncomingAction action = IncomingAction.valueOf(json.getString("action"));
         
         switch(action) {
-        // TODO: add incoming actions
+        case DEREGISTER_LISTENER: {
+          new DeregisterListenerPayload(json);
+          break;
+        }
+        
+        case DISPATCH_COMMAND: {
+          new DispatchCommandPayload(json);
+          break;
+        }
+        
+        case DISPATCH_MESSAGE: {
+          new DispatchMessagePayload(json);
+          break;
+        }
+        
+        case REGISTER_CONFIGURATION: {
+          new RegisterConfigurationPayload(json);
+          break;
+        }
+        
+        case REGISTER_LISTENER: {
+          new RegisterListenerPayload(json);
+          break;
+        }
+        
+        case UPDATE_CONFIGURATION: {
+          new UpdateConfigurationPayload(json);
+          break;
+        }
         
         default:
           throw new PayloadHandlingException(action, "Unexpected action.");
         }
+        
+        broadcast(json); // XXX this echoes incoming well-formed messages; needs to be removed in favor of a routing mechanism
       } catch(PayloadHandlingException e) { // TODO uncomment this
         ErrorPayload response = new ErrorPayload()
             .setInfo(e.getMessage())
             .setCause(e.getOffendingPayload());
+        
+        V2CDispatcher.getLogger().logError(LOG_LABEL,
+            String.format("Some exception was thrown while handling payload from %1$s:%2$d: %3$s",
+                session.getRemoteAddress().getHostString(),
+                session.getRemoteAddress().getPort(),
+                e.getMessage()));
         
         session.getRemote().sendString(response.toString());
       } catch(JSONException e) {
@@ -100,15 +172,76 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
               .setInfo(e.getMessage())
               .setCause(json);
           
+          V2CDispatcher.getLogger().logError(LOG_LABEL,
+              String.format("Some exception was thrown while parsing message from %1$s:%2$d: %3$s",
+                  session.getRemoteAddress().getHostString(),
+                  session.getRemoteAddress().getPort(),
+                  e.getMessage()));
+          
           session.getRemote().sendString(response.toString());
         }
       }
       
     } catch(IOException e) {
-      e.printStackTrace();
+      V2CDispatcher.getLogger().logError(LOG_LABEL,
+          "Some exception was thrown while handling an incoming message: " + e.getMessage());
     }
   }
   
-  // TODO we need code here that will send and/or broadcasts to target sessions
+  /**
+   * Queues a broadcast to all sessions.
+   * 
+   * @param payload the payload
+   */
+  public static void broadcast(JSONObject payload) {
+    for(Session session : sessions)
+      dispatch(session, payload);
+  }
+  
+  /**
+   * Queues a broadcast to a particular session.
+   * 
+   * @param session the session
+   * @param payload the payload
+   */
+  public static void dispatch(Session session, JSONObject payload) {
+    V2CDispatcher.getLogger().logDebug(LOG_LABEL,
+        String.format("Queueing payload for dispatch to %1$s:%2$d",
+            session.getRemoteAddress().getHostString(),
+            session.getRemoteAddress().getPort()));
+    
+    synchronized(queue) {
+      queue.add(new SimpleEntry<>(session, payload));
+      queue.notifyAll();
+    }
+  }
+  
+  /**
+   * {@inheritDoc}
+   */
+  @Override public void run() {
+    try {
+      while(!instance.isInterrupted()) {
+        Entry<Session, JSONObject> entry = null;
+        
+        synchronized(queue) {
+          while(queue.isEmpty()) queue.wait();
+          entry = queue.remove(0);
+        }
+        
+        try {
+          V2CDispatcher.getLogger().logInfo(LOG_LABEL,
+              String.format("Dispatching a payload to %1$s:%2$d",
+                  entry.getKey().getRemoteAddress().getHostString(),
+                  entry.getKey().getRemoteAddress().getPort()));
+          
+          entry.getKey().getRemote().sendString(entry.getValue().toString());
+        } catch(IOException e) {
+          V2CDispatcher.getLogger().logError(LOG_LABEL,
+              "Some exception was thrown while processing an outgoing message: " + e.getMessage());
+        }
+      }
+    } catch(InterruptedException e) { }
+  }
   
 }

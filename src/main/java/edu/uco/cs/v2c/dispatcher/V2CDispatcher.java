@@ -18,28 +18,36 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Options;
 
 import com.axonibyte.bonemesh.Logger;
 
 import edu.uco.cs.v2c.dispatcher.log.LogPrinter;
 import edu.uco.cs.v2c.dispatcher.net.APIDriver;
-import edu.uco.cs.v2c.dispatcher.persistent.Config;
 
 /**
- * Human Project Backend.
- * Powers the API for the Human Mobile App and Human Web Portal.
+ * V2C Dispatcher.
+ * Handles V2C Platform network workflow.
  * 
  * @author Caleb L. Power
  */
 public class V2CDispatcher {
+  
+  private static final String LOG_LABEL = "DISPATCHER CORE";
+  
+  private static final int DEFAULT_PORT = 2585;
+  private static final String PORT_PARAM_LONG = "port";
+  private static final String PORT_PARAM_SHORT = "p";
 
-  private static Config config = null; // configurations and settings
   private static APIDriver aPIDriver = null; // the front end
   private static Logger logger = null; // the logger
   private static LogPrinter logPrinter = null; // the log printer
-
+  
   /**
    * Entry point.
    * 
@@ -47,38 +55,33 @@ public class V2CDispatcher {
    */
   public static void main(String[] args) {
     try {
+      Options options = new Options();
+      options.addOption(PORT_PARAM_SHORT, PORT_PARAM_LONG, true,
+          "Specifies the server's listening port. Default = " + DEFAULT_PORT);
+      CommandLineParser parser = new DefaultParser();
+      CommandLine cmd = parser.parse(options, args);
+      
+      final int port = cmd.hasOption(PORT_PARAM_LONG)
+          ? Integer.parseInt(cmd.getOptionValue(PORT_PARAM_LONG)) : DEFAULT_PORT;
+      
       logger = new Logger();
       logPrinter = new LogPrinter();
       logger.addListener(logPrinter);
       
-      if(args.length != 1) throw new Exception("Bad args. Please specify a location for the config.");
-      String rawConfig = readResource(args[0]);
-      
-      if(rawConfig == null) { // TODO make admin-level configs nicer and accessible from API
-        
-        try(PrintWriter printWriter = new PrintWriter(new File(args[0]))) {
-          printWriter.print(Config.getDefaultConfig().toString(2));
-        } catch(Exception e) {
-          throw e;
-        }
-        
-        throw new Exception("File not found, so we provided a default file. Please change the defaults and try again.");
-      } else config = new Config(rawConfig);
-      
-      System.out.println("Launching front end...");
-      aPIDriver = APIDriver.build(config.getAPIPort(), config.getAPIAllowedOrigins()); // configure the front end
+      logger.logInfo(LOG_LABEL, "Spinning up API driver...");
+      aPIDriver = APIDriver.build(port, "*"); // configure the front end
   
       // catch CTRL + C
       Runtime.getRuntime().addShutdownHook(new Thread() {
         @Override public void run() {
-          System.out.println("Closing front end...");
+          logger.logInfo(LOG_LABEL, "Shutting off API driver...");
           aPIDriver.halt();
-          System.out.println("Goodbye! ^_^");
+          logger.logInfo(LOG_LABEL, "Goodbye! ^_^");
           logger.removeListener(logPrinter);
         }
       });
     } catch(Exception e) {
-      System.err.println("Some exception was thrown during launch: " + e.getMessage());
+      logger.logError(LOG_LABEL, "Some exception was thrown during launch: " + e.getMessage());
     }
   }
   

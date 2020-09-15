@@ -51,8 +51,9 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.WebSocketHandler;
  */
 public class APIDriver implements Runnable {
   
+  private static final String LOG_LABEL = "API DRIVER";
   private static final String RESPONDER_STATIC_FOLDER = ".";
-  private static final String WEBSOCKET_ROUTE = "/socket";
+  private static final String WEBSOCKET_ROUTE = "/v1/messages";
   
   private int port; // the port that the front end should run on
   private Endpoint endpoints[] = null; // the pages that will be accessible
@@ -66,6 +67,8 @@ public class APIDriver implements Runnable {
    * @param allowedOrigins the allowed origins for CORS
    */
   private APIDriver(int port, String allowedOrigins) {
+    System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "ERROR");
+    
     this.allowedOrigins = allowedOrigins;
     this.port = port;
     
@@ -82,7 +85,7 @@ public class APIDriver implements Runnable {
   @Override public void run() {
     webSocket(WEBSOCKET_ROUTE, WebSocketHandler.class); // initialize web socket for streaming blocks
     
-    V2CDispatcher.getLogger().logInfo("API", "Exposing API on port " + port);
+    V2CDispatcher.getLogger().logInfo(LOG_LABEL, "Exposing API on port " + port);
     port(port);
     
     before((req, res) -> {

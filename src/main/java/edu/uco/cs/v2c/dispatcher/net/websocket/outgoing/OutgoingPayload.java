@@ -49,8 +49,22 @@ public abstract class OutgoingPayload {
   public static enum OutgoingAction {
     
     /**
-     * Denotes that the payload regards some error that has occurred, generally
-     * (but not necessarily) in response to some action by a third party.
+     * Indicates that the payload contains some message, processed and ready to
+     * be sent to the intended recipient.
+     */
+    ROUTE_MESSAGE,
+    
+    /**
+     * Indicates that the payload contains some command, processed and ready to
+     * be sent to the intended recipient. Such a message will have the target-
+     * switching activation word sequences stripped.
+     */
+    ROUTE_COMMAND,
+    
+    /**
+     * Indicates that the payload regards some error that has occurred,
+     * generally (but not necessarily) in response to some action initiated by
+     * a third party application.
      */
     WEBSOCKET_ERROR
     
