@@ -51,6 +51,7 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.WebSocketHandler;
  */
 public class APIDriver implements Runnable {
   
+  private static final String LOG_LABEL = "API DRIVER";
   private static final String RESPONDER_STATIC_FOLDER = ".";
   private static final String WEBSOCKET_ROUTE = "/v1/messages";
   
@@ -84,7 +85,7 @@ public class APIDriver implements Runnable {
   @Override public void run() {
     webSocket(WEBSOCKET_ROUTE, WebSocketHandler.class); // initialize web socket for streaming blocks
     
-    V2CDispatcher.getLogger().logInfo("API", "Exposing API on port " + port);
+    V2CDispatcher.getLogger().logInfo(LOG_LABEL, "Exposing API on port " + port);
     port(port);
     
     before((req, res) -> {

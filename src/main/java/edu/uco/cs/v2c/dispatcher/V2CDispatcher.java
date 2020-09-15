@@ -31,12 +31,14 @@ import edu.uco.cs.v2c.dispatcher.log.LogPrinter;
 import edu.uco.cs.v2c.dispatcher.net.APIDriver;
 
 /**
- * Human Project Backend.
- * Powers the API for the Human Mobile App and Human Web Portal.
+ * V2C Dispatcher.
+ * Handles V2C Platform network workflow.
  * 
  * @author Caleb L. Power
  */
 public class V2CDispatcher {
+  
+  private static final String LOG_LABEL = "DISPATCHER CORE";
   
   private static final int DEFAULT_PORT = 2585;
   private static final String PORT_PARAM_LONG = "port";
@@ -66,20 +68,20 @@ public class V2CDispatcher {
       logPrinter = new LogPrinter();
       logger.addListener(logPrinter);
       
-      System.out.println("Launching front end...");
+      logger.logInfo(LOG_LABEL, "Spinning up API driver...");
       aPIDriver = APIDriver.build(port, "*"); // configure the front end
   
       // catch CTRL + C
       Runtime.getRuntime().addShutdownHook(new Thread() {
         @Override public void run() {
-          System.out.println("Closing front end...");
+          logger.logInfo(LOG_LABEL, "Shutting off API driver...");
           aPIDriver.halt();
-          System.out.println("Goodbye! ^_^");
+          logger.logInfo(LOG_LABEL, "Goodbye! ^_^");
           logger.removeListener(logPrinter);
         }
       });
     } catch(Exception e) {
-      System.err.println("Some exception was thrown during launch: " + e.getMessage());
+      logger.logError(LOG_LABEL, "Some exception was thrown during launch: " + e.getMessage());
     }
   }
   

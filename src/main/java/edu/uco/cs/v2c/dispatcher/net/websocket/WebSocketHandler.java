@@ -60,6 +60,8 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
  */
 @WebSocket public class WebSocketHandler implements Runnable {
   
+  private static final String LOG_LABEL = "WEBSOCKET HANDLER";
+  
   private static LinkedList<Entry<Session, JSONObject>> queue = new LinkedList<>();
   private static List<Session> sessions = new CopyOnWriteArrayList<>();
   private static Thread instance = null;
@@ -70,6 +72,11 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
    * @param session the session
    */
   @OnWebSocketConnect public void onConnect(Session session) {
+    V2CDispatcher.getLogger().logInfo(LOG_LABEL,
+        String.format("%1$s:%2$d connected via WebSocket.",
+            session.getRemoteAddress().getHostString(),
+            session.getRemoteAddress().getPort()));
+    
     if(instance == null) {
       instance = new Thread(this);
       instance.setDaemon(false);
@@ -88,6 +95,11 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
    * @param reason the reason that the session closed
    */
   @OnWebSocketClose public void onDisconnect(Session session, int statusCode, String reason) {
+    V2CDispatcher.getLogger().logInfo(LOG_LABEL,
+        String.format("%1$s:%2$d disconnected from WebSocket.",
+            session.getRemoteAddress().getHostString(),
+            session.getRemoteAddress().getPort()));
+    
     // TODO remove session from memory banks
     sessions.remove(session);
   }
@@ -147,6 +159,12 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
             .setInfo(e.getMessage())
             .setCause(e.getOffendingPayload());
         
+        V2CDispatcher.getLogger().logError(LOG_LABEL,
+            String.format("Some exception was thrown while handling payload from %1$s:%2$d: %3$s",
+                session.getRemoteAddress().getHostString(),
+                session.getRemoteAddress().getPort(),
+                e.getMessage()));
+        
         session.getRemote().sendString(response.toString());
       } catch(JSONException e) {
         if(json != null) {
@@ -154,12 +172,19 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
               .setInfo(e.getMessage())
               .setCause(json);
           
+          V2CDispatcher.getLogger().logError(LOG_LABEL,
+              String.format("Some exception was thrown while parsing message from %1$s:%2$d: %3$s",
+                  session.getRemoteAddress().getHostString(),
+                  session.getRemoteAddress().getPort(),
+                  e.getMessage()));
+          
           session.getRemote().sendString(response.toString());
         }
       }
       
     } catch(IOException e) {
-      e.printStackTrace();
+      V2CDispatcher.getLogger().logError(LOG_LABEL,
+          "Some exception was thrown while handling an incoming message: " + e.getMessage());
     }
   }
   
@@ -180,6 +205,11 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
    * @param payload the payload
    */
   public static void dispatch(Session session, JSONObject payload) {
+    V2CDispatcher.getLogger().logDebug(LOG_LABEL,
+        String.format("Queueing payload for dispatch to %1$s:%2$d",
+            session.getRemoteAddress().getHostString(),
+            session.getRemoteAddress().getPort()));
+    
     synchronized(queue) {
       queue.add(new SimpleEntry<>(session, payload));
       queue.notifyAll();
@@ -200,9 +230,15 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
         }
         
         try {
+          V2CDispatcher.getLogger().logInfo(LOG_LABEL,
+              String.format("Dispatching a payload to %1$s:%2$d",
+                  entry.getKey().getRemoteAddress().getHostString(),
+                  entry.getKey().getRemoteAddress().getPort()));
+          
           entry.getKey().getRemote().sendString(entry.getValue().toString());
         } catch(IOException e) {
-          V2CDispatcher.getLogger().logError("WEBSOCKET HANDLER", e.getMessage());
+          V2CDispatcher.getLogger().logError(LOG_LABEL,
+              "Some exception was thrown while processing an outgoing message: " + e.getMessage());
         }
       }
     } catch(InterruptedException e) { }
