@@ -167,19 +167,18 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
         
         session.getRemote().sendString(response.toString());
       } catch(JSONException e) {
-        if(json != null) {
-          ErrorPayload response = new ErrorPayload()
-              .setInfo(e.getMessage())
-              .setCause(json);
-          
-          V2CDispatcher.getLogger().logError(LOG_LABEL,
-              String.format("Some exception was thrown while parsing message from %1$s:%2$d: %3$s",
-                  session.getRemoteAddress().getHostString(),
-                  session.getRemoteAddress().getPort(),
-                  e.getMessage()));
-          
-          session.getRemote().sendString(response.toString());
-        }
+        ErrorPayload response = new ErrorPayload().setInfo(e.getMessage());
+        
+        if(json != null)
+          response.setCause(json);
+        
+        V2CDispatcher.getLogger().logError(LOG_LABEL,
+            String.format("Some exception was thrown while parsing message from %1$s:%2$d: %3$s",
+                session.getRemoteAddress().getHostString(),
+                session.getRemoteAddress().getPort(),
+                e.getMessage()));
+        
+        session.getRemote().sendString(response.toString());
       }
       
     } catch(IOException e) {
