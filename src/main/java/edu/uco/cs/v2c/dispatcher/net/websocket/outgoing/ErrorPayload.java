@@ -98,8 +98,7 @@ public class ErrorPayload extends OutgoingPayload {
    * {@inheritDoc}
    */
   @Override public JSONObject serialize() throws MalformedPayloadException {
-    if(cause == null
-        || info == null)
+    if(info == null)
       throw new MalformedPayloadException(action, "Invalid payload.");
     
     return new JSONObject()
