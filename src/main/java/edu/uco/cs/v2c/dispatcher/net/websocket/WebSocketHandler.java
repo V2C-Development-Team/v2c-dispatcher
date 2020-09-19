@@ -30,11 +30,11 @@ package edu.uco.cs.v2c.dispatcher.net.websocket;
 
 import java.io.IOException;
 import java.util.AbstractMap.SimpleEntry;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.websocket.api.Session;
@@ -69,8 +69,24 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
   private static LinkedList<Entry<Session, JSONObject>> queue = new LinkedList<>();
   private static List<Session> sessions = new CopyOnWriteArrayList<>();
   private static Thread instance = null;
-  private static Map<Session,String> registeredSessions = new HashMap<Session,String>(); //added a hash map to track registered sessions. Session mapped to Appname
-  private static Timer timer = Timer.build(new ListenerRegistrationTimerAction(), 10,registeredSessions);
+  private static Map<Session,String> registeredSessions = new ConcurrentHashMap<Session,String>(); //added a hash map to track registered sessions. Session mapped to Appname
+  private static Timer timer = Timer.build(new ListenerRegistrationTimerAction(), 10);
+  
+  
+  /*
+   * Returns the registeredSessions Map 
+   * 
+   * 
+   * */ 
+  public static Map<Session,String> getRegisteredSessions() {
+	  return registeredSessions;
+  }
+  
+  
+  
+  
+  
+  
   /**
    * Adds a session to the broadcast pool.
    * 

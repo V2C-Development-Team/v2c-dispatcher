@@ -25,7 +25,7 @@ public class Timer implements Runnable {
 	  private Thread thread = null; //thread for the timer to run in
 	  private TimerAction action = null; // action to perform after elapse.
 	  private List<Entry<Long, Session>> entries = null; 
-	  private Map<Session,String> registeredSessionsMap = null; //ugly and Non OOP, but a workaround
+	//  private Map<Session,String> registeredSessionsMap = null; //ugly and Non OOP, but a workaround
 	  
 	
 	  private Timer(TimerAction action, long delay) {
@@ -40,12 +40,12 @@ public class Timer implements Runnable {
 	   * @param delay: the delay in seconds
 	   * @return: the timer object
 	   * */
-	  public static Timer build(TimerAction action, long delay, Map<Session,String> registeredSessions ) {
+	  public static Timer build(TimerAction action, long delay) {
 		  Timer timer = new Timer(action, delay * 1000);
 		  timer.thread = new Thread(timer);
 		  timer.thread.setDaemon(true);
 		  timer.thread.start();
-		  timer.registeredSessionsMap = registeredSessions;
+		//  timer.registeredSessionsMap = registeredSessions;
 		  return timer;
 	  }
 	  
@@ -66,7 +66,7 @@ public class Timer implements Runnable {
 		        }
 		        while(entry.getKey() > System.currentTimeMillis())
 		          Thread.sleep(500L);
-		        action.onAction(entry.getValue(),this.registeredSessionsMap);
+		        action.onAction(entry.getValue());
 		      }
 		    } catch(InterruptedException e) { }
 		  }

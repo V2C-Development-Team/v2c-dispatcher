@@ -23,6 +23,6 @@ public interface TimerAction {
 	 * 
 	 * */
 	
-	public void onAction(Session session, Map<Session,String> registeredSessions);
+	public void onAction(Session session);
 	
 }

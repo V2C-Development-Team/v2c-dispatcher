@@ -34,6 +34,7 @@ import edu.uco.cs.v2c.dispatcher.net.APIVersion;
 import spark.Request;
 import spark.Response;
 
+
 /**
  * A demonstration of an endpoint.
  * 
@@ -56,6 +57,7 @@ public class DemoEndpoint extends Endpoint {
     return new JSONObject()
         .put("status", "ok")
         .put("info", "You've hit the demo endpoint.");
+    
   }
   
 }
