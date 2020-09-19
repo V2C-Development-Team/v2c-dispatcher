@@ -30,8 +30,10 @@ package edu.uco.cs.v2c.dispatcher.net.websocket;
 
 import java.io.IOException;
 import java.util.AbstractMap.SimpleEntry;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -52,6 +54,8 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.RegisterConfigurationPay
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.RegisterListenerPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.UpdateConfigurationPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
+import edu.uco.cs.v2c.dispatcher.utility.ListenerRegistrationTimerAction;
+import edu.uco.cs.v2c.dispatcher.utility.Timer;
 
 /**
  * Handles interactions via the WebSocket
@@ -65,7 +69,8 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
   private static LinkedList<Entry<Session, JSONObject>> queue = new LinkedList<>();
   private static List<Session> sessions = new CopyOnWriteArrayList<>();
   private static Thread instance = null;
-  
+  private static Map<Session,String> registeredSessions = new HashMap<Session,String>(); //added a hash map to track registered sessions. Session mapped to Appname
+  private static Timer timer = Timer.build(new ListenerRegistrationTimerAction(), 10,registeredSessions);
   /**
    * Adds a session to the broadcast pool.
    * 
@@ -83,7 +88,8 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
       instance.start();
     }
     
-    // TODO ask session to identify itself
+    timer.queue(session); //start timer for listener registration.
+    //if registration is not done in time (10s currently) it will be disconnected.
     sessions.add(session);
   }
   
@@ -100,8 +106,16 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
             session.getRemoteAddress().getHostString(),
             session.getRemoteAddress().getPort()));
     
-    // TODO remove session from memory banks
-    sessions.remove(session);
+   
+    
+    
+    //Catches case where client disconnects before deregistering.
+    if(registeredSessions.containsKey(session)) {
+    	registeredSessions.remove(session); // remove from sessions with registered listeners: registeredSessions, subset of connected sessions: sessions
+    	//broadcast(new JSONObject()); // send connected app name list to dash, eventually need to route.
+    }
+     
+    sessions.remove(session); // remove from connected WS sessions 
   }
   
   /**
@@ -121,6 +135,8 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
         switch(action) {
         case DEREGISTER_LISTENER: {
           new DeregisterListenerPayload(json);
+          registeredSessions.remove(session); // De-Register session from registration map
+          //broadcast(new JSONObject()); // send updated connected app name list to dash, eventually need to route.
           break;
         }
         
@@ -141,6 +157,9 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
         
         case REGISTER_LISTENER: {
           new RegisterListenerPayload(json);
+          registeredSessions.put(session, json.getString("app")); // map the session to the app name.
+          //broadcast(new JSONObject()); // send updated connected app name list to dash, eventually need to route.
+          System.out.println( "Listener registered for " + registeredSessions.get(session));//TODO remove debug
           break;
         }
         
