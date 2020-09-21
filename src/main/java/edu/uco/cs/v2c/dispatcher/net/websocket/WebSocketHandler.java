@@ -235,7 +235,7 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
                   entry.getKey().getRemoteAddress().getPort()));
           
           entry.getKey().getRemote().sendString(entry.getValue().toString());
-        } catch(IOException e) {
+        } catch(Exception e) {
           V2CDispatcher.getLogger().logError(LOG_LABEL,
               "Some exception was thrown while processing an outgoing message: " + e.getMessage());
         }
