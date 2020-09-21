@@ -7,10 +7,6 @@ import java.util.Map.Entry;
 import java.util.Map;
 import org.eclipse.jetty.websocket.api.Session;
 
-
-
-
-
 /*
  * An implementation of a timer
  * 

@@ -2,6 +2,7 @@ package edu.uco.cs.v2c.dispatcher.utility;
 import org.eclipse.jetty.websocket.api.Session;
 
 import edu.uco.cs.v2c.dispatcher.V2CDispatcher;
+import edu.uco.cs.v2c.dispatcher.net.websocket.RegisteredSession;
 import edu.uco.cs.v2c.dispatcher.net.websocket.WebSocketHandler;
 
 import java.util.Map;
@@ -18,7 +19,7 @@ import java.util.Map;
 
 public class ListenerRegistrationTimerAction implements TimerAction{
 	
-	private static Map<Session,String> registeredSessions;
+	private static Map<Session,RegisteredSession> registeredSessions;//TODO update for new object namestring/eavesbool
 	private static final String LOG_LABEL = "WEBSOCKET HANDLER/REGISTRATIONTIMER";
 
 	@Override public void onAction(Session session) {
