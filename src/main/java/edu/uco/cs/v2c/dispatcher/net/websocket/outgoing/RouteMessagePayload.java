@@ -113,8 +113,8 @@ public class RouteMessagePayload extends OutgoingPayload {
     return new JSONObject()
         .put(ACTION_VAR, action)
         .put(MESSAGE_VAR, message)
-        .put(SENDER_VAR, sender)
-        .put(RECIPIENT_VAR, recipient);
+        .put(SENDER_VAR, sender == null ? JSONObject.NULL : sender)
+        .put(RECIPIENT_VAR, recipient == null ? JSONObject.NULL : recipient);
   }
   
 }

@@ -87,7 +87,7 @@ public class RouteCommandPayload extends OutgoingPayload {
     return new JSONObject()
         .put(ACTION_VAR, action)
         .put(COMMAND_VAR, command)
-        .put(RECIPIENT_VAR, recipient);
+        .put(RECIPIENT_VAR, recipient == null ? JSONObject.NULL : recipient);
   }
   
 }
