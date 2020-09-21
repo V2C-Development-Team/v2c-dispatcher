@@ -1,6 +1,7 @@
 package edu.uco.cs.v2c.dispatcher.utility;
 import org.eclipse.jetty.websocket.api.Session;
 
+import edu.uco.cs.v2c.dispatcher.V2CDispatcher;
 import edu.uco.cs.v2c.dispatcher.net.websocket.WebSocketHandler;
 
 import java.util.Map;
@@ -18,12 +19,22 @@ import java.util.Map;
 public class ListenerRegistrationTimerAction implements TimerAction{
 	
 	private static Map<Session,String> registeredSessions;
+	private static final String LOG_LABEL = "WEBSOCKET HANDLER/REGISTRATIONTIMER";
 
 	@Override public void onAction(Session session) {
 		registeredSessions = WebSocketHandler.getRegisteredSessions();
+		try {
 		if(!registeredSessions.containsKey(session)) {
+			V2CDispatcher.getLogger().logError(LOG_LABEL,
+					String.format("%1$s:%2$d listener not registered in time.",
+					session.getRemoteAddress().getHostString(),
+	                session.getRemoteAddress().getPort()));
     		session.close(1, "OnConnect- Sesson listener not registered in time.");// if not registered disconnect
-    	}
+    	}}
+		catch (NullPointerException e){
+			V2CDispatcher.getLogger().logError(LOG_LABEL,
+					"Session closed before timer elapse");
+		}
 		
 	}
 	

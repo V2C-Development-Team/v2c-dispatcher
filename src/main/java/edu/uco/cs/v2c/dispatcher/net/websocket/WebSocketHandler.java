@@ -69,8 +69,9 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
   private static LinkedList<Entry<Session, JSONObject>> queue = new LinkedList<>();
   private static List<Session> sessions = new CopyOnWriteArrayList<>();
   private static Thread instance = null;
-  private static Map<Session,String> registeredSessions = new ConcurrentHashMap<Session,String>(); //added a hash map to track registered sessions. Session mapped to Appname
-  private static Timer timer = Timer.build(new ListenerRegistrationTimerAction(), 10);
+  private static Map<Session,String> registeredSessions = new ConcurrentHashMap<Session,String>(); 
+  private static Timer timer = Timer.build(new ListenerRegistrationTimerAction(), 3);
+  
   
   
   /*
@@ -104,6 +105,8 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
       instance.start();
     }
     
+    
+   
     timer.queue(session); //start timer for listener registration.
     //if registration is not done in time (10s currently) it will be disconnected.
     sessions.add(session);
@@ -127,6 +130,8 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
     
     //Catches case where client disconnects before deregistering.
     if(registeredSessions.containsKey(session)) {
+    	V2CDispatcher.getLogger().logInfo(LOG_LABEL, String.format("listenener deregistered for " + registeredSessions.get(session) + " %1$s:%2$d",session.getRemoteAddress().getHostString(),
+                session.getRemoteAddress().getPort()));
     	registeredSessions.remove(session); // remove from sessions with registered listeners: registeredSessions, subset of connected sessions: sessions
     	//broadcast(new JSONObject()); // send connected app name list to dash, eventually need to route.
     }
@@ -151,8 +156,11 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
         switch(action) {
         case DEREGISTER_LISTENER: {
           new DeregisterListenerPayload(json);
+          V2CDispatcher.getLogger().logInfo(LOG_LABEL,
+        		  String.format("listenener deregistered for " + json.getString("app") + " %1$s:%2$d",session.getRemoteAddress().getHostString(),
+                  session.getRemoteAddress().getPort()));
           registeredSessions.remove(session); // De-Register session from registration map
-          //broadcast(new JSONObject()); // send updated connected app name list to dash, eventually need to route.
+          
           break;
         }
         
@@ -174,8 +182,9 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
         case REGISTER_LISTENER: {
           new RegisterListenerPayload(json);
           registeredSessions.put(session, json.getString("app")); // map the session to the app name.
-          //broadcast(new JSONObject()); // send updated connected app name list to dash, eventually need to route.
-          System.out.println( "Listener registered for " + registeredSessions.get(session));//TODO remove debug
+          V2CDispatcher.getLogger().logInfo(LOG_LABEL,
+        		  String.format("Listenener Registered for " + json.getString("app") + " %1$s:%2$d",session.getRemoteAddress().getHostString(),
+                  session.getRemoteAddress().getPort()));
           break;
         }
         
