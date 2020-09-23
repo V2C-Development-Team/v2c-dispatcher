@@ -74,7 +74,7 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
   private static Map<Session,RegisteredSession> registeredSessions = new ConcurrentHashMap<Session,RegisteredSession>();
   private static Timer timer = Timer.build(new ListenerRegistrationTimerAction(), 3);//3 seconds to register
  
-  private static final String sender = "DISPATCHER";// sender name for outgoing messages. //#TODO send messages on state change
+  private static final String sender = "DISPATCHER";// sender name for outgoing messages. 
   private static RouteMessagePayload outgoing = null;
   
   /*
@@ -107,7 +107,7 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
     
    
     timer.queue(session); //start timer for listener registration.
-    //if registration is not done in time (10s currently) it will be disconnected.
+    //if registration is not done in time (3s currently) it will be disconnected.
     sessions.add(session);
     
     // create a message to notify eavesdroppers
@@ -117,7 +117,7 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
     			.put("message", String.format("Client %1$s at %2$d has connected"
     					,session.getRemoteAddress().getHostString()
     					,session.getRemoteAddress().getPort()))).setSender(sender);
-     // for each sesssion k if v is eavesdropper, send message about new connecct																
+     // for each sesssion key k if  session v is eavesdropper, send message about new connecct																
      registeredSessions.forEach((k,v)-> {
     	 if(k.isOpen()) {
     	 if(v.isEavesdropper()) {
@@ -186,7 +186,7 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
                 session.getRemoteAddress().getPort()));
     	registeredSessions.remove(session); 
         // remove from sessions with registered listeners: registeredSessions, subset of connected sessions: sessions
-    	//broadcast(new JSONObject()); // send connected app name list to dash, eventually need to route.
+    	
     }
      
     sessions.remove(session); // remove from connected WS sessions 
@@ -216,7 +216,7 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
         				  ,session.getRemoteAddress().getHostString()
         				  ,session.getRemoteAddress().getPort()));
           registeredSessions.remove(session); // De-Register session from registration map
-          LogPrinter.pushToTrafficLog(json);
+          LogPrinter.pushToTrafficLog(json); // add log entry for traffic
           
           // create a message to notify eavesdroppers
           outgoing = new RouteMessagePayload().setMessage(new JSONObject()
@@ -249,25 +249,25 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
         
         case DISPATCH_COMMAND: {
           new DispatchCommandPayload(json);
-          LogPrinter.pushToTrafficLog(json);
+          LogPrinter.pushToTrafficLog(json);// add log entry for traffic
           break;
         }
         
         case DISPATCH_MESSAGE: {
           new DispatchMessagePayload(json);
-          LogPrinter.pushToTrafficLog(json);
+          LogPrinter.pushToTrafficLog(json);// add log entry for traffic
           break;
         }
         
         case REGISTER_CONFIGURATION: {
           new RegisterConfigurationPayload(json);
-          LogPrinter.pushToTrafficLog(json);
+          LogPrinter.pushToTrafficLog(json);// add log entry for traffic
           break;
         }
         
         case REGISTER_LISTENER: {
           new RegisterListenerPayload(json);
-          LogPrinter.pushToTrafficLog(json);
+          LogPrinter.pushToTrafficLog(json);// add log entry for traffic
           registeredSessions.put(session, new RegisteredSession(json.getString("app"),json.getBoolean("eavesdrop")));// map the session to the app name.
        
           V2CDispatcher.getLogger().logInfo(LOG_LABEL,
@@ -309,7 +309,7 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
         }
         
         case UPDATE_CONFIGURATION: {
-          LogPrinter.pushToTrafficLog(json);
+          LogPrinter.pushToTrafficLog(json);// add log entry for traffic
           new UpdateConfigurationPayload(json);
           break;
         }

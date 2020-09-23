@@ -19,13 +19,12 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
-import java.util.LinkedList;
 import java.util.Locale;
 import java.util.TimeZone;
 
 import com.axonibyte.bonemesh.listener.LogListener;
 
-import org.json.JSONException;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
@@ -39,14 +38,13 @@ public class LogPrinter implements LogListener {
   
   private BoneMeshLogCatcher boneMeshLogCatcher = null;
   private Calendar calendar = null;
-  private static LinkedList<JSONObject> trafficLog = null;//added for holding log
+  private static JSONArray trafficLog = new JSONArray();
   /**
    * Null constructor.
    */
   public LogPrinter() {
     this.boneMeshLogCatcher = new BoneMeshLogCatcher();
     this.calendar = new GregorianCalendar(TimeZone.getTimeZone("US/Central"));
-    this.trafficLog = new LinkedList<>();
   }
 
   /**
@@ -70,6 +68,7 @@ public class LogPrinter implements LogListener {
     log("ERROR", label, message, timestamp);
   }
   
+  //log logger messages to STD out and push to JSONArray log
   private void log(String type, String label, String message, long timestamp) {
     calendar.setTimeInMillis(timestamp);
     System.out.println(
@@ -81,43 +80,34 @@ public class LogPrinter implements LogListener {
     pushToTrafficLog(buildTrafficEntry(type,label,message,timestamp));
   }
   
-  
+  //build a JSON object from logger messages
   public JSONObject buildTrafficEntry(String type, String label, String message, long timestamp) {
 	  calendar.setTimeInMillis(timestamp);
 	  return new JSONObject().put("timestamp", String.format("%1$s",sdf.format(calendar.getTime())))
-			  				 .put("type", type).put("label", label).put("message", message); //TODO logic to convert from STDOUT data to JSON format
+			  				 .put("type", type).put("label", label).put("message", message); 
   }
   
-  // alternate builder for JSON object message 
-  public  JSONObject buildTrafficEntry(String type, String label, JSONObject message, long timestamp) {
+  // alternate builder for JSON object message, currently not used
+  public JSONObject buildTrafficEntry(String type, String label, JSONObject message, long timestamp) {
 	  calendar.setTimeInMillis(timestamp);
 	  return new JSONObject().put("timestamp", String.format("%1$s",sdf.format(calendar.getTime())))
-			  				 .put("type", type).put("label", label).put("message", message); //TODO logic to convert from STDOUT data to JSON format
+			  				 .put("type", type).put("label", label).put("message", message); 
   }
   
-  
-  public static void pushToTrafficLog(JSONObject trafficLogEntry) {
-	  if(trafficLog.size() > 1000) {
-		  trafficLog.removeFirst();
+  //push to log JSONarray. log maintains 1000 entries
+  public synchronized static void pushToTrafficLog(JSONObject trafficLogEntry) {
+	  if(trafficLog.length() > 999) {
+		  trafficLog.remove(1);
 	  }
-	  trafficLog.add(trafficLogEntry);
+	  trafficLog.put(trafficLogEntry);
   }
   
-  public static LinkedList<JSONObject> getTrafficLog(){
+  //return the traffic log
+  public synchronized static JSONArray getTrafficLog(){
 	  return trafficLog;
   }
   
-  public static JSONObject getTrafficLogJSON() {
-	  JSONObject jSONList = new JSONObject();
-	  for(int i = 0; i < ((trafficLog.size() < 100)? trafficLog.size():100 );i++) {
-		  jSONList.put(String.format("Entry %1$d", i), trafficLog.get(i));
-	  }
-	  return jSONList;
-			  
-	  //#TODO need to return the log as a JSON object
-  }
-  
-  
+ 
   
   
   /**
