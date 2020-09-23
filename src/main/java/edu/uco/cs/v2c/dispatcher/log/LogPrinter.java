@@ -19,10 +19,14 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.LinkedList;
 import java.util.Locale;
 import java.util.TimeZone;
 
 import com.axonibyte.bonemesh.listener.LogListener;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * Log manager.
@@ -35,13 +39,14 @@ public class LogPrinter implements LogListener {
   
   private BoneMeshLogCatcher boneMeshLogCatcher = null;
   private Calendar calendar = null;
-  
+  private static LinkedList<JSONObject> trafficLog = null;//added for holding log
   /**
    * Null constructor.
    */
   public LogPrinter() {
     this.boneMeshLogCatcher = new BoneMeshLogCatcher();
     this.calendar = new GregorianCalendar(TimeZone.getTimeZone("US/Central"));
+    this.trafficLog = new LinkedList<>();
   }
 
   /**
@@ -73,7 +78,47 @@ public class LogPrinter implements LogListener {
             type,
             label,
             message));
+    pushToTrafficLog(buildTrafficEntry(type,label,message,timestamp));
   }
+  
+  
+  public JSONObject buildTrafficEntry(String type, String label, String message, long timestamp) {
+	  calendar.setTimeInMillis(timestamp);
+	  return new JSONObject().put("timestamp", String.format("%1$s",sdf.format(calendar.getTime())))
+			  				 .put("type", type).put("label", label).put("message", message); //TODO logic to convert from STDOUT data to JSON format
+  }
+  
+  // alternate builder for JSON object message 
+  public  JSONObject buildTrafficEntry(String type, String label, JSONObject message, long timestamp) {
+	  calendar.setTimeInMillis(timestamp);
+	  return new JSONObject().put("timestamp", String.format("%1$s",sdf.format(calendar.getTime())))
+			  				 .put("type", type).put("label", label).put("message", message); //TODO logic to convert from STDOUT data to JSON format
+  }
+  
+  
+  public static void pushToTrafficLog(JSONObject trafficLogEntry) {
+	  if(trafficLog.size() > 1000) {
+		  trafficLog.removeFirst();
+	  }
+	  trafficLog.add(trafficLogEntry);
+  }
+  
+  public static LinkedList<JSONObject> getTrafficLog(){
+	  return trafficLog;
+  }
+  
+  public static JSONObject getTrafficLogJSON() {
+	  JSONObject jSONList = new JSONObject();
+	  for(int i = 0; i < ((trafficLog.size() < 100)? trafficLog.size():100 );i++) {
+		  jSONList.put(String.format("Entry %1$d", i), trafficLog.get(i));
+	  }
+	  return jSONList;
+			  
+	  //#TODO need to return the log as a JSON object
+  }
+  
+  
+  
   
   /**
    * Retrieves the BoneMesh-specific logger.

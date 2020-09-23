@@ -42,6 +42,7 @@ import edu.uco.cs.v2c.dispatcher.V2CDispatcher;
 import edu.uco.cs.v2c.dispatcher.net.restful.DemoEndpoint;
 import edu.uco.cs.v2c.dispatcher.net.restful.Endpoint;
 import edu.uco.cs.v2c.dispatcher.net.restful.HTTPMethod;
+import edu.uco.cs.v2c.dispatcher.net.restful.LogEndpoint;
 import edu.uco.cs.v2c.dispatcher.net.restful.RegisteredSessionsEndpoint;
 import edu.uco.cs.v2c.dispatcher.net.websocket.WebSocketHandler;
 
@@ -75,7 +76,8 @@ public class APIDriver implements Runnable {
     
     endpoints = new Endpoint[] {
         new DemoEndpoint(),
-        new RegisteredSessionsEndpoint()
+        new RegisteredSessionsEndpoint(),
+        new LogEndpoint()
     };
     
     staticFiles.location(RESPONDER_STATIC_FOLDER); // relative to the root of the classpath
