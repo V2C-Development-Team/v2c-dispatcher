@@ -52,6 +52,7 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.RegisterConfigurationPay
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.RegisterListenerPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.UpdateConfigurationPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
+import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.RouteCommandPayload;
 
 /**
  * Handles interactions via the WebSocket
@@ -125,17 +126,27 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
         }
         
         case DISPATCH_COMMAND: {
-          new DispatchCommandPayload(json);
+          DispatchCommandPayload incoming = new DispatchCommandPayload(json);
+          RouteCommandPayload outgoing = new RouteCommandPayload()
+              .setCommand(incoming.getCommand())
+              .setRecipient("desktop");
+          try {
+            broadcast(outgoing.serialize());
+          } catch(MalformedPayloadException e) {
+            e.printStackTrace();
+          }
           break;
         }
         
         case DISPATCH_MESSAGE: {
           new DispatchMessagePayload(json);
+          broadcast(json); // XXX this echoes incoming well-formed messages; needs to be removed in favor of a routing mechanism
           break;
         }
         
         case REGISTER_CONFIGURATION: {
           new RegisterConfigurationPayload(json);
+          broadcast(json); // XXX this echoes incoming well-formed messages; needs to be removed in favor of a routing mechanism
           break;
         }
         
@@ -146,14 +157,13 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
         
         case UPDATE_CONFIGURATION: {
           new UpdateConfigurationPayload(json);
+          broadcast(json); // XXX this echoes incoming well-formed messages; needs to be removed in favor of a routing mechanism
           break;
         }
         
         default:
           throw new PayloadHandlingException(action, "Unexpected action.");
         }
-        
-        broadcast(json); // XXX this echoes incoming well-formed messages; needs to be removed in favor of a routing mechanism
       } catch(PayloadHandlingException e) { // TODO uncomment this
         ErrorPayload response = new ErrorPayload()
             .setInfo(e.getMessage())
