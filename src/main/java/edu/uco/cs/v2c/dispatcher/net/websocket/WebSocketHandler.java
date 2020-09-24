@@ -72,7 +72,7 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
   private static List<Session> sessions = new CopyOnWriteArrayList<>();
   private static Thread instance = null;
   private static Map<Session,RegisteredSession> registeredSessions = new ConcurrentHashMap<Session,RegisteredSession>();
-  private static Timer timer = Timer.build(new ListenerRegistrationTimerAction(), 3);//3 seconds to register
+  private static Timer timer = Timer.build(new ListenerRegistrationTimerAction(), 15);//15 seconds to register
  
   private static final String sender = "DISPATCHER";// sender name for outgoing messages. 
   private static RouteMessagePayload outgoing = null;
@@ -107,7 +107,7 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
     
    
     timer.queue(session); //start timer for listener registration.
-    //if registration is not done in time (3s currently) it will be disconnected.
+    //if registration is not done in time (15s currently) it will be disconnected.
     sessions.add(session);
     
     // create a message to notify eavesdroppers
