@@ -28,7 +28,7 @@ public class RegisteredSessionsEndpoint extends Endpoint {
 		registeredSessions = WebSocketHandler.getRegisteredSessions();
 		registeredSessions.forEach((k,v)-> moduleNames.add(v.getName()));
 		return new JSONObject()
-				.put("Connected Applications", moduleNames.toString() );
+				.put("Connected Applications", moduleNames );
 	}
 	
 }
