@@ -24,6 +24,9 @@ import java.util.TimeZone;
 
 import com.axonibyte.bonemesh.listener.LogListener;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 /**
  * Log manager.
  * 
@@ -35,7 +38,7 @@ public class LogPrinter implements LogListener {
   
   private BoneMeshLogCatcher boneMeshLogCatcher = null;
   private Calendar calendar = null;
-  
+  private static JSONArray trafficLog = new JSONArray();
   /**
    * Null constructor.
    */
@@ -65,6 +68,7 @@ public class LogPrinter implements LogListener {
     log("ERROR", label, message, timestamp);
   }
   
+  //log logger messages to STD out and push to JSONArray log
   private void log(String type, String label, String message, long timestamp) {
     calendar.setTimeInMillis(timestamp);
     System.out.println(
@@ -73,7 +77,38 @@ public class LogPrinter implements LogListener {
             type,
             label,
             message));
+    pushToTrafficLog(buildTrafficEntry(type,label,message,timestamp));
   }
+  
+  //build a JSON object from logger messages
+  public JSONObject buildTrafficEntry(String type, String label, String message, long timestamp) {
+	  calendar.setTimeInMillis(timestamp);
+	  return new JSONObject().put("timestamp", String.format("%1$s",sdf.format(calendar.getTime())))
+			  				 .put("type", type).put("label", label).put("message", message); 
+  }
+  
+  // alternate builder for JSON object message, currently not used
+  public JSONObject buildTrafficEntry(String type, String label, JSONObject message, long timestamp) {
+	  calendar.setTimeInMillis(timestamp);
+	  return new JSONObject().put("timestamp", String.format("%1$s",sdf.format(calendar.getTime())))
+			  				 .put("type", type).put("label", label).put("message", message); 
+  }
+  
+  //push to log JSONarray. log maintains 1000 entries
+  public synchronized static void pushToTrafficLog(JSONObject trafficLogEntry) {
+	  if(trafficLog.length() > 999) {
+		  trafficLog.remove(1);
+	  }
+	  trafficLog.put(trafficLogEntry);
+  }
+  
+  //return the traffic log
+  public synchronized static JSONArray getTrafficLog(){
+	  return trafficLog;
+  }
+  
+ 
+  
   
   /**
    * Retrieves the BoneMesh-specific logger.

@@ -68,6 +68,7 @@ public class V2CDispatcher {
       logPrinter = new LogPrinter();
       logger.addListener(logPrinter);
       
+      
       logger.logInfo(LOG_LABEL, "Spinning up API driver...");
       aPIDriver = APIDriver.build(port, "*"); // configure the front end
   
