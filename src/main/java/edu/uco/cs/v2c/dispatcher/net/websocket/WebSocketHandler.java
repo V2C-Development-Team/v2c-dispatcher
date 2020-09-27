@@ -217,7 +217,8 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
         				  ,session.getRemoteAddress().getHostString()
         				  ,session.getRemoteAddress().getPort()));
           registeredSessions.remove(session); // De-Register session from registration map
-          LogPrinter.pushToTrafficLog(json); // add log entry for traffic
+          V2CDispatcher.getLogger().logDebug(LOG_LABEL, json.toString());
+          //LogPrinter.pushToTrafficLog(json); // add log entry for traffic
           
           // create a message to notify eavesdroppers
           outgoing = new RouteMessagePayload().setMessage(new JSONObject()
@@ -258,28 +259,31 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
           } catch(MalformedPayloadException e) {
             e.printStackTrace();
           }
-
-          LogPrinter.pushToTrafficLog(json);// add log entry for traffic
+          V2CDispatcher.getLogger().logDebug(LOG_LABEL, json.toString());
+          //LogPrinter.pushToTrafficLog(json);// add log entry for traffic
           break;
         }
         
         case DISPATCH_MESSAGE: {
           new DispatchMessagePayload(json);
           broadcast(json); // XXX this echoes incoming well-formed messages; needs to be removed in favor of a routing mechanism
-          LogPrinter.pushToTrafficLog(json);// add log entry for traffic
+          V2CDispatcher.getLogger().logDebug(LOG_LABEL, json.toString());
+          //LogPrinter.pushToTrafficLog(json);// add log entry for traffic
           break;
         }
         
         case REGISTER_CONFIGURATION: {
           new RegisterConfigurationPayload(json);
           broadcast(json); // XXX this echoes incoming well-formed messages; needs to be removed in favor of a routing mechanism
-          LogPrinter.pushToTrafficLog(json);// add log entry for traffic
+          V2CDispatcher.getLogger().logDebug(LOG_LABEL, json.toString());
+          //LogPrinter.pushToTrafficLog(json);// add log entry for traffic
           break;
         }
         
         case REGISTER_LISTENER: {
           new RegisterListenerPayload(json);
-          LogPrinter.pushToTrafficLog(json);// add log entry for traffic
+         // LogPrinter.pushToTrafficLog(json);// add log entry for traffic
+          V2CDispatcher.getLogger().logDebug(LOG_LABEL, json.toString());
           registeredSessions.put(session, new RegisteredSession(json.getString("app"),json.getBoolean("eavesdrop")));// map the session to the app name.
        
           V2CDispatcher.getLogger().logInfo(LOG_LABEL,
@@ -321,7 +325,8 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
         }
         
         case UPDATE_CONFIGURATION: {
-          LogPrinter.pushToTrafficLog(json);// add log entry for traffic
+          //LogPrinter.pushToTrafficLog(json);// add log entry for traffic
+          V2CDispatcher.getLogger().logDebug(LOG_LABEL, json.toString());
           new UpdateConfigurationPayload(json);
           broadcast(json); // XXX this echoes incoming well-formed messages; needs to be removed in favor of a routing mechanism
           break;
