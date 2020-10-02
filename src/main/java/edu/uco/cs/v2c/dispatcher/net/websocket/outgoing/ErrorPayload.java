@@ -102,7 +102,7 @@ public class ErrorPayload extends OutgoingPayload {
       throw new MalformedPayloadException(action, "Invalid payload.");
     
     return new JSONObject()
-        .put(ACTION_VAR, action)
+        .put(ACTION_VAR, action.name())
         .put(INFO_VAR, info)
         .put(CAUSE_VAR, cause == null ? JSONObject.NULL : cause);
   }

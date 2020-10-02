@@ -85,7 +85,7 @@ public class RouteCommandPayload extends OutgoingPayload {
       throw new MalformedPayloadException(action, "Invalid payload.");
     
     return new JSONObject()
-        .put(ACTION_VAR, action)
+        .put(ACTION_VAR, action.name())
         .put(COMMAND_VAR, command)
         .put(RECIPIENT_VAR, recipient == null ? JSONObject.NULL : recipient);
   }

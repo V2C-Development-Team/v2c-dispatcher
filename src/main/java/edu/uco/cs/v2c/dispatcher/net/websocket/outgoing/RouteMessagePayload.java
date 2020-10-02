@@ -111,7 +111,7 @@ public class RouteMessagePayload extends OutgoingPayload {
       throw new MalformedPayloadException(action, "Invalid payload.");
     
     return new JSONObject()
-        .put(ACTION_VAR, action)
+        .put(ACTION_VAR, action.name())
         .put(MESSAGE_VAR, message)
         .put(SENDER_VAR, sender == null ? JSONObject.NULL : sender)
         .put(RECIPIENT_VAR, recipient == null ? JSONObject.NULL : recipient);

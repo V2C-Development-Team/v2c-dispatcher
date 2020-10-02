@@ -91,7 +91,7 @@ public class HeartbeatPayload extends OutgoingPayload {
       throw new MalformedPayloadException(action, "Invalid payload.");
     
     return new JSONObject()
-        .put(ACTION_VAR, action)
+        .put(ACTION_VAR, action.name())
         .put(KEY_VAR, key.toString())
         .put(TIMESTAMP_VAR, timestamp);
   }
