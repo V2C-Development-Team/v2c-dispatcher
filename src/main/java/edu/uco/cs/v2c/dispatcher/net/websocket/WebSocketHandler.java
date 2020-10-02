@@ -34,6 +34,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -50,14 +51,17 @@ import edu.uco.cs.v2c.dispatcher.log.LogPrinter;
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.DeregisterListenerPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.DispatchCommandPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.DispatchMessagePayload;
+import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.HeartbeatAckPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.IncomingPayload.IncomingAction;
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.RegisterConfigurationPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.RegisterListenerPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.UpdateConfigurationPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
+import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.HeartbeatPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.RouteCommandPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.RouteMessagePayload;
 import edu.uco.cs.v2c.dispatcher.utility.ListenerRegistrationTimerAction;
+import edu.uco.cs.v2c.dispatcher.utility.RepeatingTimer;
 import edu.uco.cs.v2c.dispatcher.utility.Timer;
 
 /**
@@ -74,6 +78,20 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
   private static Thread instance = null;
   private static Map<Session,RegisteredSession> registeredSessions = new ConcurrentHashMap<Session,RegisteredSession>();
   private static Timer timer = Timer.build(new ListenerRegistrationTimerAction(), 15);//15 seconds to register
+  
+  @SuppressWarnings("unused") private static RepeatingTimer keepaliveTimer = RepeatingTimer.build(30000L, new Runnable() {
+    @Override public void run() {
+      try {
+        broadcast(new HeartbeatPayload()
+            .setKey(UUID.randomUUID())
+            .setTimestamp(System.currentTimeMillis())
+            .serialize());
+      } catch(MalformedPayloadException e) {
+        e.printStackTrace();
+      }
+    }
+  });
+
  
   private static final String sender = "DISPATCHER";// sender name for outgoing messages. 
   private static RouteMessagePayload outgoing = null;
@@ -332,6 +350,16 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
           break;
         }
         
+        case HEARTBEAT_ACK: {
+          V2CDispatcher.getLogger().logDebug(LOG_LABEL, json.toString());
+          HeartbeatAckPayload incoming = new HeartbeatAckPayload(json);
+          V2CDispatcher.getLogger().logInfo(LOG_LABEL,
+              String.format("Got ack from %1$s, key = %2$s",
+                  incoming.getApp(),
+                  incoming.getKey().toString()));
+          break;
+        }
+        
         default:
           throw new PayloadHandlingException(action, "Unexpected action.");
         }
@@ -411,7 +439,8 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
         
         try {
           V2CDispatcher.getLogger().logInfo(LOG_LABEL,
-              String.format("Dispatching a payload to %1$s:%2$d",
+              String.format("Dispatching a payload of %1$s to %2$s:%3$d",
+                  entry.getValue().has("action") ? "type " + entry.getValue().getString("action") : "unknown type",
                   entry.getKey().getRemoteAddress().getHostString(),
                   entry.getKey().getRemoteAddress().getPort()));
           

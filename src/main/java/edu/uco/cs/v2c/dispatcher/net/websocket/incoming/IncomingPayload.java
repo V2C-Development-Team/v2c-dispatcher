@@ -32,6 +32,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import edu.uco.cs.v2c.dispatcher.net.websocket.PayloadHandlingException;
+import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.OutgoingPayload.OutgoingAction;
 
 /**
  * An incoming payload sent over a WebSocket for the purposes of interacting
@@ -84,7 +85,13 @@ public class IncomingPayload {
      * Indicates that the payload contains some updated configuration that
      * another module should apply.
      */
-    UPDATE_CONFIGURATION
+    UPDATE_CONFIGURATION,
+    
+    /**
+     * Indicates a keepalive response, in direct response to
+     * {@link OutgoingAction#HEARTBEAT}.
+     */
+    HEARTBEAT_ACK
   }
   
   protected static final String ACTION_VAR = "action";

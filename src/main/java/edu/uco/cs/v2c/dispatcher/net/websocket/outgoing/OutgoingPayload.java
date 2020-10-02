@@ -66,7 +66,13 @@ public abstract class OutgoingPayload {
      * generally (but not necessarily) in response to some action initiated by
      * a third party application.
      */
-    WEBSOCKET_ERROR
+    WEBSOCKET_ERROR,
+    
+    /**
+     * Indicates a keepalive request-- mostly a NOP, but used to maintain the
+     * validity of the WebSocket connection.
+     */
+    HEARTBEAT
     
   }
   
