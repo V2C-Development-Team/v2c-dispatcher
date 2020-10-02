@@ -10,7 +10,7 @@ import org.eclipse.jetty.websocket.api.Session;
 /*
  * An implementation of a timer
  * 
- * @author Caleb Powers https://github.com/calebpower/timer-demo.git
+ * @author Caleb Power https://github.com/calebpower/timer-demo.git
  * 
  * adapted for V2C dispatcher under open source by
  * @ author Jon Craig
