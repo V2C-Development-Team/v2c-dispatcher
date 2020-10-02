@@ -55,6 +55,7 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.RegisterConfigurationPay
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.RegisterListenerPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.UpdateConfigurationPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
+import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.RouteCommandPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.RouteMessagePayload;
 import edu.uco.cs.v2c.dispatcher.utility.ListenerRegistrationTimerAction;
 import edu.uco.cs.v2c.dispatcher.utility.Timer;
@@ -216,7 +217,8 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
         				  ,session.getRemoteAddress().getHostString()
         				  ,session.getRemoteAddress().getPort()));
           registeredSessions.remove(session); // De-Register session from registration map
-          LogPrinter.pushToTrafficLog(json); // add log entry for traffic
+          V2CDispatcher.getLogger().logDebug(LOG_LABEL, json.toString());
+          //LogPrinter.pushToTrafficLog(json); // add log entry for traffic
           
           // create a message to notify eavesdroppers
           outgoing = new RouteMessagePayload().setMessage(new JSONObject()
@@ -248,26 +250,40 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
         }
         
         case DISPATCH_COMMAND: {
-          new DispatchCommandPayload(json);
-          LogPrinter.pushToTrafficLog(json);// add log entry for traffic
+          DispatchCommandPayload incoming = new DispatchCommandPayload(json);
+          RouteCommandPayload outgoing = new RouteCommandPayload()
+              .setCommand(incoming.getCommand())
+              .setRecipient("desktop");
+          try {
+            broadcast(outgoing.serialize());
+          } catch(MalformedPayloadException e) {
+            e.printStackTrace();
+          }
+          V2CDispatcher.getLogger().logDebug(LOG_LABEL, json.toString());
+          //LogPrinter.pushToTrafficLog(json);// add log entry for traffic
           break;
         }
         
         case DISPATCH_MESSAGE: {
           new DispatchMessagePayload(json);
-          LogPrinter.pushToTrafficLog(json);// add log entry for traffic
+          broadcast(json); // XXX this echoes incoming well-formed messages; needs to be removed in favor of a routing mechanism
+          V2CDispatcher.getLogger().logDebug(LOG_LABEL, json.toString());
+          //LogPrinter.pushToTrafficLog(json);// add log entry for traffic
           break;
         }
         
         case REGISTER_CONFIGURATION: {
           new RegisterConfigurationPayload(json);
-          LogPrinter.pushToTrafficLog(json);// add log entry for traffic
+          broadcast(json); // XXX this echoes incoming well-formed messages; needs to be removed in favor of a routing mechanism
+          V2CDispatcher.getLogger().logDebug(LOG_LABEL, json.toString());
+          //LogPrinter.pushToTrafficLog(json);// add log entry for traffic
           break;
         }
         
         case REGISTER_LISTENER: {
           new RegisterListenerPayload(json);
-          LogPrinter.pushToTrafficLog(json);// add log entry for traffic
+         // LogPrinter.pushToTrafficLog(json);// add log entry for traffic
+          V2CDispatcher.getLogger().logDebug(LOG_LABEL, json.toString());
           registeredSessions.put(session, new RegisteredSession(json.getString("app"),json.getBoolean("eavesdrop")));// map the session to the app name.
        
           V2CDispatcher.getLogger().logInfo(LOG_LABEL,
@@ -309,16 +325,16 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
         }
         
         case UPDATE_CONFIGURATION: {
-          LogPrinter.pushToTrafficLog(json);// add log entry for traffic
+          //LogPrinter.pushToTrafficLog(json);// add log entry for traffic
+          V2CDispatcher.getLogger().logDebug(LOG_LABEL, json.toString());
           new UpdateConfigurationPayload(json);
+          broadcast(json); // XXX this echoes incoming well-formed messages; needs to be removed in favor of a routing mechanism
           break;
         }
         
         default:
           throw new PayloadHandlingException(action, "Unexpected action.");
         }
-        
-        broadcast(json); // XXX this echoes incoming well-formed messages; needs to be removed in favor of a routing mechanism
       } catch(PayloadHandlingException e) { // TODO uncomment this
         ErrorPayload response = new ErrorPayload()
             .setInfo(e.getMessage())
