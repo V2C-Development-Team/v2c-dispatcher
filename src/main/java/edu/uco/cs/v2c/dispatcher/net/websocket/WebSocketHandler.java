@@ -51,6 +51,7 @@ import edu.uco.cs.v2c.dispatcher.log.LogPrinter;
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.DeregisterListenerPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.DispatchCommandPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.DispatchMessagePayload;
+import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.HeartbeatAckPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.IncomingPayload.IncomingAction;
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.RegisterConfigurationPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.RegisterListenerPayload;
@@ -347,6 +348,15 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
           new UpdateConfigurationPayload(json);
           broadcast(json); // XXX this echoes incoming well-formed messages; needs to be removed in favor of a routing mechanism
           break;
+        }
+        
+        case HEARTBEAT_ACK: {
+          V2CDispatcher.getLogger().logDebug(LOG_LABEL, json.toString());
+          HeartbeatAckPayload incoming = new HeartbeatAckPayload(json);
+          V2CDispatcher.getLogger().logInfo(LOG_LABEL,
+              String.format("Got ack from %1$s, key = %2$s",
+                  incoming.getApp(),
+                  incoming.getKey().toString()));
         }
         
         default:
