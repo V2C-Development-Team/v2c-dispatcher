@@ -31,6 +31,7 @@ package edu.uco.cs.v2c.dispatcher.net.websocket.outgoing;
 import org.json.JSONObject;
 
 import edu.uco.cs.v2c.dispatcher.net.websocket.MalformedPayloadException;
+import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.IncomingPayload.IncomingAction;
 
 /**
  * An outgoing payload to be sent over a WebSocket for the purposes of
@@ -66,7 +67,13 @@ public abstract class OutgoingPayload {
      * generally (but not necessarily) in response to some action initiated by
      * a third party application.
      */
-    WEBSOCKET_ERROR
+    WEBSOCKET_ERROR,
+    
+    /**
+     * Indicates a keepalive response, in direct response to
+     * {@link IncomingAction#HEARTBEAT}.
+     */
+    HEARTBEAT
     
   }
   

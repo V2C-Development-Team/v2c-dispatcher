@@ -84,7 +84,13 @@ public class IncomingPayload {
      * Indicates that the payload contains some updated configuration that
      * another module should apply.
      */
-    UPDATE_CONFIGURATION
+    UPDATE_CONFIGURATION,
+    
+    /**
+     * Indicates a keepalive request-- mostly a NOP, but used to maintain the
+     * validity of the WebSocket connection.
+     */
+    HEARTBEAT_ACK
   }
   
   protected static final String ACTION_VAR = "action";
