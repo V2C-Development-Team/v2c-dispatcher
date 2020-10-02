@@ -357,6 +357,7 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
               String.format("Got ack from %1$s, key = %2$s",
                   incoming.getApp(),
                   incoming.getKey().toString()));
+          break;
         }
         
         default:
