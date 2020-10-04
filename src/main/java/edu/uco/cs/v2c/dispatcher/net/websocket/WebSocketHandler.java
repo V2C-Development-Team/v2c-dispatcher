@@ -354,7 +354,7 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
 	  registered.forEach((k,v)-> {
 		  if(k.isOpen() && v.isEavesdropper()) {
 			  try {
-				  out.setRecipient(v.getName());
+				  //out.setRecipient(v.getName());
 				  dispatch(k, out.serialize());
 			  }
 			  catch(MalformedPayloadException e) {
