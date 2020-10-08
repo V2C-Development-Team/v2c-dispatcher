@@ -30,12 +30,13 @@ package edu.uco.cs.v2c.dispatcher.net.websocket;
 
 import java.io.IOException;
 import java.util.AbstractMap.SimpleEntry;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.websocket.api.Session;
@@ -59,6 +60,7 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.HeartbeatPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.RouteCommandPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.RouteMessagePayload;
+import edu.uco.cs.v2c.dispatcher.net.websocket.session.SessionMap;
 import edu.uco.cs.v2c.dispatcher.utility.ListenerRegistrationTimerAction;
 import edu.uco.cs.v2c.dispatcher.utility.RepeatingTimer;
 import edu.uco.cs.v2c.dispatcher.utility.Timer;
@@ -75,7 +77,7 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
   private static LinkedList<Entry<Session, JSONObject>> queue = new LinkedList<>();
   private static List<Session> sessions = new CopyOnWriteArrayList<>();
   private static Thread instance = null;
-  private static Map<Session,RegisteredSession> registeredSessions = new ConcurrentHashMap<Session,RegisteredSession>();
+  private static SessionMap sessionMap = new SessionMap();
   private static Timer timer = Timer.build(new ListenerRegistrationTimerAction(), 15);//15 seconds to register
   private static final String sender = "DISPATCHER"; // sender name for outgoing messages. 
   private static RouteMessagePayload outgoing = null;
@@ -96,17 +98,10 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
       }
     }
   });
-
   
-  /*
-   * Returns the registeredSessions Map 
-   * 
-   * 
-   * */ 
-  public static Map<Session,RegisteredSession> getRegisteredSessions() {
-	 return registeredSessions;
- }
- 
+  public static SessionMap getSessionMap() {
+    return sessionMap;
+  }
   
   /**
    * Adds a session to the broadcast pool.
@@ -140,10 +135,7 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
     					,session.getRemoteAddress().getPort()))).setSender(sender);
     
     // for each sesssion key k if  session v is eavesdropper, send message about new connect	
-    messageEavesdroppers(registeredSessions, outgoing);
-    
-     															
-  
+    messageEavesdroppers(outgoing, null);
   }
   
   /**
@@ -167,17 +159,16 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
     													,session.getRemoteAddress().getHostString()
     													,session.getRemoteAddress().getPort()))).setSender(sender);
     // for each sesssion k if v is eavesdropper, send message about  disconnect	
-    messageEavesdroppers(registeredSessions, outgoing);
+    messageEavesdroppers(outgoing, null);
      																 
-    
     //Catches case where client disconnects before deregistering.
-    if(registeredSessions.containsKey(session)) {
+    if(sessionMap.containsKey(session)) {
     	V2CDispatcher.getLogger().logInfo(LOG_LABEL,
     			String.format("Client Disconnected, listenener deregistered for " 
-    	+ registeredSessions.get(session).getName() 
+    	+ sessionMap.get(session).getName() 
     	+ " %1$s:%2$d",session.getRemoteAddress().getHostString(),
                 session.getRemoteAddress().getPort()));
-    	registeredSessions.remove(session); 
+    	sessionMap.deregister(session); 
         // remove from sessions with registered listeners: registeredSessions, subset of connected sessions: sessions
     	
     }
@@ -208,7 +199,7 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
         				  + " %1$s:%2$d"
         				  ,session.getRemoteAddress().getHostString()
         				  ,session.getRemoteAddress().getPort()));
-          registeredSessions.remove(session); // De-Register session from registration map
+          sessionMap.deregister(session); // De-Register session from registration map
           V2CDispatcher.getLogger().logDebug(LOG_LABEL, json.toString());       
           // create a message to notify eavesdroppers
           outgoing = new RouteMessagePayload().setMessage(new JSONObject()
@@ -219,7 +210,7 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
           															,session.getRemoteAddress().getPort(),
    															    json.getString("app")))).setSender(sender);
        // for each sesssion k if v is eavesdropper, send message about new deregistration	
-          messageEavesdroppers(registeredSessions, outgoing);
+          messageEavesdroppers(outgoing, null);
           break;
         }
         
@@ -230,9 +221,7 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
               .setRecipient("desktop");
           routingMachine.queue(incoming.getCommand());
           
-          Session target = routingMachine.getTarget();
-          if(target != null && !registeredSessions.containsKey(routingMachine.getTarget()))
-              commandEavesdroppers(registeredSessions, outgoing);
+          commandEavesdroppers(outgoing, routingMachine.getTarget());
           V2CDispatcher.getLogger().logDebug(LOG_LABEL, json.toString());
           break;
         }
@@ -254,7 +243,7 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
         case REGISTER_LISTENER: {
           new RegisterListenerPayload(json); 
           V2CDispatcher.getLogger().logDebug(LOG_LABEL, json.toString());
-          registeredSessions.put(session, new RegisteredSession(json.getString("app"),json.getBoolean("eavesdrop")));// map the session to the app name.
+          sessionMap.register(new RegisteredSession(session, json.getString("app"),json.getBoolean("eavesdrop"))); // map the session to the app name.
        
           V2CDispatcher.getLogger().logInfo(LOG_LABEL,
         		  String.format("Listenener Registered for " 
@@ -273,7 +262,7 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
           													,session.getRemoteAddress().getPort(),
           													json.getString("app")))).setSender(sender);
        // for each sesssion k if v is eavesdropper, send message about new Registration	
-          messageEavesdroppers(registeredSessions, outgoing);
+          messageEavesdroppers(outgoing, null);
           
           break;
         }
@@ -332,40 +321,34 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
   }
   
   
-  public static void messageEavesdroppers(Map<Session,RegisteredSession> registered, RouteMessagePayload out) {
-	  registered.forEach((k,v)-> {
-		  if(k.isOpen() && v.isEavesdropper()) {
-			  try {
-				  out.setRecipient(v.getName());
-				  dispatch(k, out.serialize());
-			  }
-			  catch(MalformedPayloadException e) {
-				  V2CDispatcher.getLogger().logError(LOG_LABEL,
-	 						String.format("Some exception was thrown while handling payload from %1$s:%2$d: %3$s",
-	 		                k.getRemoteAddress().getHostString(),
-	 		                k.getRemoteAddress().getPort(),
-	 		                e.getMessage()));
-			  }
+  public static void messageEavesdroppers(RouteMessagePayload out, RegisteredSession exclude) {
+	  sessionMap.getSessionsByName().forEach((k,v) -> {
+		  if((exclude == null || !k.equalsIgnoreCase(exclude.getName()))
+		      && v.getSession().isOpen() && v.isEavesdropper()) try {
+		    dispatch(v.getSession(), out.serialize());
+		  } catch(MalformedPayloadException e) {
+		    V2CDispatcher.getLogger().logError(LOG_LABEL,
+		        String.format("Some exception was thrown while handling payload from %1$s:%2$d: %3$s",
+		            v.getSession().getRemoteAddress().getHostString(),
+		            v.getSession().getRemoteAddress().getPort(),
+		            e.getMessage()));
 		  }
 	  });
   }
   
 
-  public static void commandEavesdroppers(Map<Session,RegisteredSession> registered, RouteCommandPayload out) {
-	  registered.forEach((k,v)-> {
-		  if(k.isOpen() && v.isEavesdropper()) {
-			  try {
-				  //out.setRecipient(v.getName());
-				  dispatch(k, out.serialize());
-			  }
-			  catch(MalformedPayloadException e) {
-				  V2CDispatcher.getLogger().logError(LOG_LABEL,
-	 						String.format("Some exception was thrown while handling payload from %1$s:%2$d: %3$s",
-	 		                k.getRemoteAddress().getHostString(),
-	 		                k.getRemoteAddress().getPort(),
-	 		                e.getMessage()));
-			  }
-		  }
+  public static void commandEavesdroppers(RouteCommandPayload out, RegisteredSession exclude) {
+	  sessionMap.getSessionsByName().forEach((k, v) -> {
+		  if((exclude == null || !k.equalsIgnoreCase(exclude.getName()))
+		      && v.getSession().isOpen() && v.isEavesdropper()) try {
+				dispatch(v.getSession(), out.serialize());
+			} catch(MalformedPayloadException e) {
+				V2CDispatcher.getLogger().logError(LOG_LABEL,
+				    String.format("Some exception was thrown while handling payload from %1$s:%2$d: %3$s",
+				        v.getSession().getRemoteAddress().getHostString(),
+				        v.getSession().getRemoteAddress().getPort(),
+				        e.getMessage()));
+			}
 	  });
   }
   
