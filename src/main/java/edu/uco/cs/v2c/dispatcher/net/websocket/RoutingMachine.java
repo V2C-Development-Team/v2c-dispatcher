@@ -42,9 +42,7 @@ public class RoutingMachine implements Runnable {
 	 * flushes the outgoing buffer of data and reconstruct the message.
 	 * */
 	private void flush() {
-	  System.out.println("!!!!!!!!!!!!!!!! FLUSH");
 		if(confirmedBuffer.isEmpty()) return; //if buffer is empty it is flushed
-		System.out.println("!!!!!!!!!!!!!!!! FLUSH x 2");
 		
 		StringBuilder stringBuilder = new StringBuilder();//a builder for building the outgoing command
 		do
@@ -52,7 +50,6 @@ public class RoutingMachine implements Runnable {
 		while(!confirmedBuffer.isEmpty());// while buffer !empty append token at 0, and a space
 		// this is essentially reconstructing our tokenized string
 		listener.onRoute(target.get(), stringBuilder.toString().stripTrailing());
-		System.out.println("!!!!!!!!!!!!!!!! END FLUSH");
 	}
 	
 	
