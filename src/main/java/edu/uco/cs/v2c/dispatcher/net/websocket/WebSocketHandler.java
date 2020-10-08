@@ -77,7 +77,7 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
   private static Thread instance = null;
   private static Map<Session,RegisteredSession> registeredSessions = new ConcurrentHashMap<Session,RegisteredSession>();
   private static Timer timer = Timer.build(new ListenerRegistrationTimerAction(), 15);//15 seconds to register
-  private static final String sender = "DISPATCHER";// sender name for outgoing messages. 
+  private static final String sender = "DISPATCHER"; // sender name for outgoing messages. 
   private static RouteMessagePayload outgoing = null;
   private RoutingListener routingListener = new Router();
   private RoutingMachine routingMachine = RoutingMachine.build(routingListener);
@@ -230,12 +230,9 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
               .setRecipient("desktop");
           routingMachine.queue(incoming.getCommand());
           
-          try {
-            broadcast(outgoing.serialize());
-            commandEavesdroppers(registeredSessions, outgoing);
-          } catch(MalformedPayloadException e) {
-            e.printStackTrace();
-          }
+          Session target = routingMachine.getTarget();
+          if(target != null && !registeredSessions.containsKey(routingMachine.getTarget()))
+              commandEavesdroppers(registeredSessions, outgoing);
           V2CDispatcher.getLogger().logDebug(LOG_LABEL, json.toString());
           break;
         }
