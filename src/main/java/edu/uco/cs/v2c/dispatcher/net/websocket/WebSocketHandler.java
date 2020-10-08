@@ -79,6 +79,8 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
   private static Timer timer = Timer.build(new ListenerRegistrationTimerAction(), 15);//15 seconds to register
   private static final String sender = "DISPATCHER";// sender name for outgoing messages. 
   private static RouteMessagePayload outgoing = null;
+  private RoutingListener routingListener = new Router();
+  private RoutingMachine routingMachine = RoutingMachine.build(routingListener);
   
   
   
@@ -226,6 +228,8 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
           RouteCommandPayload outgoing = new RouteCommandPayload()
               .setCommand(incoming.getCommand())
               .setRecipient("desktop");
+          routingMachine.queue(incoming.getCommand());
+          
           try {
             broadcast(outgoing.serialize());
             commandEavesdroppers(registeredSessions, outgoing);
@@ -349,7 +353,7 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
 	  });
   }
   
-  
+
   public static void commandEavesdroppers(Map<Session,RegisteredSession> registered, RouteCommandPayload out) {
 	  registered.forEach((k,v)-> {
 		  if(k.isOpen() && v.isEavesdropper()) {
