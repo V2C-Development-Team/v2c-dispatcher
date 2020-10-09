@@ -16,7 +16,6 @@ import org.eclipse.jetty.websocket.api.Session;
 
 
 public class RegisteredSessionsEndpoint extends Endpoint {
-	private static Map<Session,RegisteredSession> registeredSessions = null;
 	private static List<String> moduleNames = null;
 	//Instantiates the endpoint
 	public RegisteredSessionsEndpoint() {
@@ -24,11 +23,8 @@ public class RegisteredSessionsEndpoint extends Endpoint {
 	}
 	
 	@Override public JSONObject doEndpointTask(Request req, Response res) throws EndpointException{
-		moduleNames = new CopyOnWriteArrayList<>();
-		registeredSessions = WebSocketHandler.getRegisteredSessions();
-		registeredSessions.forEach((k,v)-> moduleNames.add(v.getName()));
 		return new JSONObject()
-				.put("Connected Applications", moduleNames );
+		    .put("Connected Applications", WebSocketHandler.getSessionMap().getSessionsByName().keySet());
 	}
 	
 }
