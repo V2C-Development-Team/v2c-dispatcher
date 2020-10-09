@@ -30,12 +30,9 @@ package edu.uco.cs.v2c.dispatcher.net.websocket;
 
 import java.io.IOException;
 import java.util.AbstractMap.SimpleEntry;
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -52,14 +49,12 @@ import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.DeregisterListenerPayloa
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.DispatchCommandPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.DispatchMessagePayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.HeartbeatAckPayload;
-import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.IncomingPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.IncomingPayload.IncomingAction;
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.RegisterConfigurationPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.RegisterListenerPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.incoming.UpdateConfigurationPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.ErrorPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.HeartbeatPayload;
-import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.OutgoingPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.RouteCommandPayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.outgoing.RouteMessagePayload;
 import edu.uco.cs.v2c.dispatcher.net.websocket.session.SessionMap;
@@ -195,6 +190,7 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
       try {
         json = new JSONObject(message);
         IncomingAction action = IncomingAction.valueOf(json.getString("action"));
+        String sender = sessionMap.containsKey(session) ? sessionMap.get(session).getName() : null;
         
         switch(action) {
         case DEREGISTER_LISTENER: {
@@ -231,16 +227,32 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
         }
         
         case DISPATCH_MESSAGE: {
-          new DispatchMessagePayload(json);
-          broadcast(json); // XXX this echoes incoming well-formed messages; needs to be removed in favor of a routing mechanism
+          DispatchMessagePayload incoming = new DispatchMessagePayload(json);
           V2CDispatcher.getLogger().logDebug(LOG_LABEL, json.toString());
+          
+          Session target = sessionMap.containsKey(incoming.getRecipient()) ? sessionMap.get(incoming.getRecipient()).getSession() : null;
+
+          if(target == null) {
+            ErrorPayload outgoing = new ErrorPayload()
+                .setCause(json)
+                .setInfo("Unknown recipient.");
+            dispatch(session, outgoing.serialize());
+          } else {
+            RouteMessagePayload outgoing = new RouteMessagePayload()
+                .setMessage(incoming.getMessage())
+                .setRecipient(incoming.getRecipient())
+                .setSender(sender);
+            dispatch(target, outgoing.serialize());
+            messageEavesdroppers(outgoing.serialize(), sessionMap.get(target));
+          }
+          
           break;
         }
         
         case REGISTER_CONFIGURATION: {
           new RegisterConfigurationPayload(json);
-          broadcast(json); // XXX this echoes incoming well-formed messages; needs to be removed in favor of a routing mechanism
           V2CDispatcher.getLogger().logDebug(LOG_LABEL, json.toString());
+          messageEavesdroppers(json, sessionMap.containsKey(session) ? sessionMap.get(session) : null);
           break;
         }
         
@@ -264,9 +276,21 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
         }
         
         case UPDATE_CONFIGURATION: {
+          UpdateConfigurationPayload incoming = new UpdateConfigurationPayload(json);
           V2CDispatcher.getLogger().logDebug(LOG_LABEL, json.toString());
-          new UpdateConfigurationPayload(json);
-          broadcast(json); // XXX this echoes incoming well-formed messages; needs to be removed in favor of a routing mechanism
+          
+          Session target = sessionMap.containsKey(incoming.getApp()) ? sessionMap.get(incoming.getApp()).getSession() : null;
+          
+          if(target == null) {
+            ErrorPayload outgoing = new ErrorPayload()
+                .setCause(json)
+                .setInfo("Unknown recipient.");
+            dispatch(session, outgoing.serialize());
+          } else {
+            dispatch(target, json);
+            messageEavesdroppers(json, sessionMap.get(target));
+          }
+          
           break;
         }
         
@@ -283,7 +307,19 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
         default:
           throw new PayloadHandlingException(action, "Unexpected action.");
         }
-      } catch(PayloadHandlingException e) { // TODO uncomment this
+      } catch(PayloadHandlingException e) {
+        ErrorPayload response = new ErrorPayload()
+            .setInfo(e.getMessage())
+            .setCause(e.getOffendingPayload());
+        
+        V2CDispatcher.getLogger().logError(LOG_LABEL,
+            String.format("Some exception was thrown while handling payload from %1$s:%2$d: %3$s",
+                session.getRemoteAddress().getHostString(),
+                session.getRemoteAddress().getPort(),
+                e.getMessage()));
+        
+        session.getRemote().sendString(response.toString());
+      } catch(MalformedPayloadException e) {
         ErrorPayload response = new ErrorPayload()
             .setInfo(e.getMessage())
             .setCause(e.getOffendingPayload());
