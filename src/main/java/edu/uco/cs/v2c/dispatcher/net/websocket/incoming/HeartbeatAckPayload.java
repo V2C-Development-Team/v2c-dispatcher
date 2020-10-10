@@ -45,7 +45,7 @@ public class HeartbeatAckPayload extends IncomingPayload {
     super(raw, IncomingAction.HEARTBEAT_ACK);
     
     try {
-      app = raw.getString(APP_VAR);
+      app = raw.getString(APP_VAR).toLowerCase();
       key = UUID.fromString(raw.getString(KEY_VAR));
       timestamp = raw.getLong(TIMESTAMP_VAR); 
     } catch(IllegalArgumentException | JSONException e) {

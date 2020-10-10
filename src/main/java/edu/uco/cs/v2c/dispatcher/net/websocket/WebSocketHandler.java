@@ -224,13 +224,13 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
         }
         
         case REGISTER_LISTENER: {
-          new RegisterListenerPayload(json); 
+           RegisterListenerPayload registeredListenerPayload = new RegisterListenerPayload(json); 
           V2CDispatcher.getLogger().logDebug(LOG_LABEL, json.toString());
-          sessionMap.register(new RegisteredSession(session, json.getString("app").toLowerCase(),json.getBoolean("eavesdrop"))); // map the session to the app name.
-       
+          sessionMap.register(new RegisteredSession(session, registeredListenerPayload.getApp(), registeredListenerPayload.isEavesdropper())); // map the session to the app name.
+         
           V2CDispatcher.getLogger().logInfo(LOG_LABEL,
         		  String.format("Listenener Registered for " 
-        				  + json.getString("app") 
+        				  + registeredListenerPayload.getApp() 
         				  + " %1$s:%2$d",
         				  session.getRemoteAddress().getHostString(),
         				  session.getRemoteAddress().getPort())); //log the registration
