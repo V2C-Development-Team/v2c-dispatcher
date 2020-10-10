@@ -161,10 +161,11 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
         
         switch(action) {
         case DEREGISTER_LISTENER: {
-          new DeregisterListenerPayload(json);
+        	
+          DeregisterListenerPayload deregisterListenerPayload = new DeregisterListenerPayload(json);
           V2CDispatcher.getLogger().logInfo(LOG_LABEL,
         		  String.format("listenener deregistered for " 
-        				  + json.getString("app") 
+        				  + deregisterListenerPayload.getApp()
         				  + " %1$s:%2$d"
         				  ,session.getRemoteAddress().getHostString()
         				  ,session.getRemoteAddress().getPort()));
@@ -207,7 +208,7 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
           } else {
             RouteMessagePayload outgoing = new RouteMessagePayload()
                 .setMessage(incoming.getMessage())
-                .setRecipient(incoming.getRecipient().toLowerCase())
+                .setRecipient(incoming.getRecipient())
                 .setSender(sender);
             dispatch(target, outgoing.serialize());
             messageEavesdroppers(outgoing.serialize(), sessionMap.get(target));
