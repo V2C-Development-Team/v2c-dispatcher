@@ -76,8 +76,6 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
   private static Thread instance = null;
   private static SessionMap sessionMap = new SessionMap();
   private static Timer timer = Timer.build(new ListenerRegistrationTimerAction(), 15);//15 seconds to register
-  private static final String sender = "DISPATCHER"; // sender name for outgoing messages. 
-  private static RouteMessagePayload outgoing = null;
   private RoutingListener routingListener = new Router();
   private RoutingMachine routingMachine = RoutingMachine.build(routingListener);
   
@@ -122,45 +120,14 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
     timer.queue(session); //start timer for listener registration.
     //if registration is not done in time (15s currently) it will be disconnected.
     sessions.add(session);
-    /*
-     * #TODO remove. currently not needed, logic below is to notify eavesdroppers of connection
-    // create a message to notify eavesdroppers
-    outgoing = new RouteMessagePayload().setMessage(
-    		new JSONObject()
-    			.put("event", "CONNECT")
-    			.put("message", String.format("Client %1$s at %2$d has connected"
-    					,session.getRemoteAddress().getHostString()
-    					,session.getRemoteAddress().getPort()))).setSender(sender);
-    
-    // for each sesssion key k if  session v is eavesdropper, send message about new connect	
-    messageEavesdroppers(outgoing, null);
-    */
   }
-  
-  /**
-   * Removes a session from the broadcast pool.
-   * 
-   * @param session the session
-   * @param statusCode the status code
-   * @param reason the reason that the session closed
-   */
   @OnWebSocketClose public void onDisconnect(Session session, int statusCode, String reason) {
     V2CDispatcher.getLogger().logInfo(LOG_LABEL,
         String.format("%1$s:%2$d disconnected from WebSocket.",
             session.getRemoteAddress().getHostString(),
             session.getRemoteAddress().getPort()));
     
-   /*
-    * #TODO Remove, not needed currently. below is logic to notify eaves of disconnect
-    // create a message to notify eavesdroppers
-    outgoing = new RouteMessagePayload().setMessage(new JSONObject()
-    													.put("event", "DISCONNECT")
-    													.put("message", String.format("Client %1$s at %2$d has disconnected"
-    													,session.getRemoteAddress().getHostString()
-    													,session.getRemoteAddress().getPort()))).setSender(sender);
-    // for each sesssion k if v is eavesdropper, send message about  disconnect	
-    messageEavesdroppers(outgoing, null);
-     */				
+ 		
     
     //Catches case where client disconnects before deregistering.
     if(sessionMap.containsKey(session)) {
@@ -240,7 +207,7 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
           } else {
             RouteMessagePayload outgoing = new RouteMessagePayload()
                 .setMessage(incoming.getMessage())
-                .setRecipient(incoming.getRecipient())
+                .setRecipient(incoming.getRecipient().toLowerCase())
                 .setSender(sender);
             dispatch(target, outgoing.serialize());
             messageEavesdroppers(outgoing.serialize(), sessionMap.get(target));
@@ -259,7 +226,7 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
         case REGISTER_LISTENER: {
           new RegisterListenerPayload(json); 
           V2CDispatcher.getLogger().logDebug(LOG_LABEL, json.toString());
-          sessionMap.register(new RegisteredSession(session, json.getString("app"),json.getBoolean("eavesdrop"))); // map the session to the app name.
+          sessionMap.register(new RegisteredSession(session, json.getString("app").toLowerCase(),json.getBoolean("eavesdrop"))); // map the session to the app name.
        
           V2CDispatcher.getLogger().logInfo(LOG_LABEL,
         		  String.format("Listenener Registered for " 
