@@ -42,7 +42,7 @@ public class RegisterListenerPayload extends IncomingPayload {
     
     try {
       eavesdrop = raw.getBoolean(EAVESDROP_VAR);
-      app = raw.getString(APP_VAR);
+      app = raw.getString(APP_VAR).toLowerCase();
     } catch(JSONException e) {
       throw new PayloadHandlingException(action, e, raw);
     }

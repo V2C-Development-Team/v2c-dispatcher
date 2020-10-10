@@ -39,7 +39,7 @@ public class DispatchCommandPayload extends IncomingPayload {
     super(raw, IncomingAction.DISPATCH_COMMAND);
     
     try {
-      command = raw.getString(COMMAND_VAR);
+      command = raw.getString(COMMAND_VAR).toLowerCase();
     } catch(JSONException e) {
       throw new PayloadHandlingException(action, e, raw);
     }

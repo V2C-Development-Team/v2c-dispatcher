@@ -42,7 +42,7 @@ public class DispatchMessagePayload extends IncomingPayload {
     
     try {
       message = raw.getJSONObject(MESSAGE_VAR);
-      recipient = raw.has(RECIPIENT_VAR) && !raw.isNull(RECIPIENT_VAR) ? raw.getString(RECIPIENT_VAR) : null;
+      recipient = raw.has(RECIPIENT_VAR) && !raw.isNull(RECIPIENT_VAR) ? raw.getString(RECIPIENT_VAR).toLowerCase() : null;
     } catch(JSONException e) {
       throw new PayloadHandlingException(action, e, raw);
     }

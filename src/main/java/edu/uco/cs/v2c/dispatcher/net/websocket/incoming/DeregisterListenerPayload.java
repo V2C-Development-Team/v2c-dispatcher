@@ -39,7 +39,7 @@ public class DeregisterListenerPayload extends IncomingPayload {
     super(raw, IncomingAction.DEREGISTER_LISTENER);
     
     try {
-      app = raw.getString(APP_VAR);
+      app = raw.getString(APP_VAR).toLowerCase();
     } catch(JSONException e) {
       throw new PayloadHandlingException(action, e, raw);
     }

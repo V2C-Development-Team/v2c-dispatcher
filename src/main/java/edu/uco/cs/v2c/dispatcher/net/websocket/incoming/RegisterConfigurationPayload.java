@@ -41,7 +41,7 @@ public class RegisterConfigurationPayload extends IncomingPayload {
     super(raw, IncomingAction.REGISTER_CONFIGURATION);
     
     try {
-      app = raw.getString(APP_VAR);
+      app = raw.getString(APP_VAR).toLowerCase();
       config = raw.getJSONObject(CONFIG_VAR);
     } catch(JSONException e) {
       throw new PayloadHandlingException(action, e, raw);
