@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
@@ -218,20 +219,34 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
         }
         
         case REGISTER_CONFIGURATION: {
-          new RegisterConfigurationPayload(json);
-          V2CDispatcher.getLogger().logDebug(LOG_LABEL, json.toString());
+          try {
+            new RegisterConfigurationPayload(json);
+          } catch(PayloadHandlingException e) {
+            V2CDispatcher.getLogger().logError(LOG_LABEL, String.format("Received a bad default configuration from %1$s.", sender));
+            throw e;
+          }
+          
+          V2CDispatcher.getLogger().logDebug(LOG_LABEL, String.format("Received a default configuration: %1$s", json.toString()));
           messageEavesdroppers(json, sessionMap.containsKey(session) ? sessionMap.get(session) : null);
           break;
         }
         
         case REGISTER_LISTENER: {
-           RegisterListenerPayload registeredListenerPayload = new RegisterListenerPayload(json); 
+          RegisterListenerPayload incoming = null;
+          
+          try {
+            incoming = new RegisterListenerPayload(json); 
+          } catch(PayloadHandlingException e) {
+            V2CDispatcher.getLogger().logError(LOG_LABEL, String.format("Received a bad configuration update message from %1$s.", sender));
+            throw e;
+          }
+          
           V2CDispatcher.getLogger().logDebug(LOG_LABEL, json.toString());
-          sessionMap.register(new RegisteredSession(session, registeredListenerPayload.getApp(), registeredListenerPayload.isEavesdropper())); // map the session to the app name.
+          sessionMap.register(new RegisteredSession(session, incoming.getApp(), incoming.isEavesdropper())); // map the session to the app name.
          
           V2CDispatcher.getLogger().logInfo(LOG_LABEL,
         		  String.format("Listenener Registered for " 
-        				  + registeredListenerPayload.getApp() 
+        				  + incoming.getApp() 
         				  + " %1$s:%2$d",
         				  session.getRemoteAddress().getHostString(),
         				  session.getRemoteAddress().getPort())); //log the registration
@@ -322,9 +337,15 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
   
   
   public static void messageEavesdroppers(JSONObject out, RegisteredSession exclude) {
+    final AtomicInteger count = new AtomicInteger(0);
+    
 	  sessionMap.getSessionsByName().forEach((k,v) -> {
 		  if((exclude == null || !k.equalsIgnoreCase(exclude.getName()))
 		      && v.getSession().isOpen() && v.isEavesdropper()) try {
+		    count.incrementAndGet();
+		    V2CDispatcher.getLogger().logDebug(LOG_LABEL,
+		        String.format("The following message is being sent to the %1$s eavesdropper: %2$s",
+		            v.getName(), out.toString()));
 		    dispatch(v.getSession(), out);
 		  } catch(Exception e) {
 		    V2CDispatcher.getLogger().logError(LOG_LABEL,
@@ -334,6 +355,10 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
 		            e.getMessage()));
 		  }
 	  });
+	  
+    V2CDispatcher.getLogger().logDebug(LOG_LABEL,
+        String.format("No unexcluded eavesdroppers were registered so the following message was not sent to them: %1$s",
+            out.toString()));
   }
   
 
