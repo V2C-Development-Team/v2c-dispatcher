@@ -377,7 +377,8 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
    * @param payload the payload
    */
   public static void broadcast(JSONObject payload) {
-    for(Session session : sessions)
+	// for(Session session : sessions)
+	for(Session session : sessionMap.getSessions())
       dispatch(session, payload);
   }
   

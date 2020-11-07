@@ -129,6 +129,6 @@ public class RoutingMachine implements Runnable {
 	}
 
 	public void resetTarget() {
-		target = new AtomicReference<RegisteredSession>();
+		target.set(null);
 	}
 }
