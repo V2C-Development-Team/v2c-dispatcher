@@ -128,7 +128,12 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
             session.getRemoteAddress().getHostString(),
             session.getRemoteAddress().getPort()));
     
- 		
+    //reset the target in routing machine, as this session will be null
+ 	if(routingMachine.getTarget().getSession().equals(session)) {
+ 		routingMachine.resetTarget();
+ 		V2CDispatcher.getLogger().logDebug(LOG_LABEL,
+ 		        "Routing Target Reset");
+ 	}
     
     //Catches case where client disconnects before deregistering.
     if(sessionMap.containsKey(session)) {
@@ -138,6 +143,7 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
     	+ " %1$s:%2$d",session.getRemoteAddress().getHostString(),
                 session.getRemoteAddress().getPort()));
     	sessionMap.deregister(session); 
+    	
         // remove from sessions with registered listeners: registeredSessions, subset of connected sessions: sessions
     	
     }
@@ -382,15 +388,22 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
    * @param payload the payload
    */
   public static void dispatch(Session session, JSONObject payload) {
-    V2CDispatcher.getLogger().logDebug(LOG_LABEL,
+  try {
+	  V2CDispatcher.getLogger().logDebug(LOG_LABEL,
         String.format("Queueing payload for dispatch to %1$s:%2$d",
             session.getRemoteAddress().getHostString(),
             session.getRemoteAddress().getPort()));
-    
+
     synchronized(queue) {
       queue.add(new SimpleEntry<>(session, payload));
       queue.notifyAll();
     }
+  }
+  
+  catch(Exception e) {
+	  V2CDispatcher.getLogger().logError(LOG_LABEL,
+              "failed to dispatch: " + e.getMessage());
+  }
   }
   
   /**
