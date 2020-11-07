@@ -187,16 +187,21 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
         
         case DISPATCH_COMMAND: {
           DispatchCommandPayload incoming = new DispatchCommandPayload(json);
-          RouteCommandPayload outgoing = new RouteCommandPayload()
-              .setCommand(incoming.getCommand())
-              .setRecipient("desktop");
           routingMachine.queue(incoming.getCommand());
-          try {
-          messageEavesdroppers(outgoing.serialize(), routingMachine.getTarget());
+          if(routingMachine.getTarget() == null) {
+            V2CDispatcher.getLogger().logError(LOG_LABEL, "Message could not be sent because target has not yet been set.");
+          } else {
+            RouteCommandPayload outgoing = new RouteCommandPayload()
+                .setCommand(incoming.getCommand())
+                .setRecipient(routingMachine.getTarget().getName());
+            try {
+            messageEavesdroppers(outgoing.serialize(), routingMachine.getTarget());
+            }
+            catch(MalformedPayloadException e) {
+          	  V2CDispatcher.getLogger().logError(LOG_LABEL, String.format("Malformed Payload-Failed to notify eavesdroppers of command %1s$", outgoing.toString() ));
+            }
           }
-          catch(MalformedPayloadException e) {
-        	  V2CDispatcher.getLogger().logError(LOG_LABEL, String.format("Malformed Payload-Failed to notify eavesdroppers of command %1s$", outgoing.toString() ));
-          }
+          
           V2CDispatcher.getLogger().logDebug(LOG_LABEL, json.toString());
           break;
         }
