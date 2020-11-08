@@ -112,7 +112,8 @@ public class RoutingMachine implements Runnable {
         } // branch if it is a normal token, and target is not found
 
       }
-    } catch(InterruptedException e) {}
+    } catch(InterruptedException e) {
+    	V2CDispatcher.getLogger().logDebug(LABEL, String.format("RoutingMachine has been interrupted: %1$s", e.getMessage()));}
 
   }
 	
@@ -127,4 +128,7 @@ public class RoutingMachine implements Runnable {
 	  return target.get();
 	}
 
+	public void resetTarget() {
+		target.set(null);
+	}
 }
