@@ -195,7 +195,7 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
                 .setCommand(incoming.getCommand())
                 .setRecipient(routingMachine.getTarget().getName());
             try {
-            messageEavesdroppers(outgoing.serialize(), routingMachine.getTarget());
+            messageEavesdroppers(outgoing.setEavesdropped(true).serialize(), routingMachine.getTarget());
             }
             catch(MalformedPayloadException e) {
           	  V2CDispatcher.getLogger().logError(LOG_LABEL, String.format("Malformed Payload-Failed to notify eavesdroppers of command %1s$", outgoing.toString() ));
@@ -223,7 +223,7 @@ import edu.uco.cs.v2c.dispatcher.utility.Timer;
                 .setRecipient(incoming.getRecipient())
                 .setSender(sender);
             dispatch(target, outgoing.serialize());
-            messageEavesdroppers(outgoing.serialize(), sessionMap.get(target));
+            messageEavesdroppers(outgoing.setEavesdropped(true).serialize(), sessionMap.get(target));
           }
           
           break;
