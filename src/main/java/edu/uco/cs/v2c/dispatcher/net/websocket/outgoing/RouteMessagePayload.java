@@ -27,7 +27,9 @@ public class RouteMessagePayload extends OutgoingPayload {
   private static final String MESSAGE_VAR = "message";
   private static final String SENDER_VAR = "sender";
   private static final String RECIPIENT_VAR = "recipient";
+  private static final String EAVESDROPPED_VAR = "eavesdropped";
   
+  private boolean eavesdropped = false;
   private JSONObject message = null;
   private String sender = null;
   private String recipient = null;
@@ -37,6 +39,26 @@ public class RouteMessagePayload extends OutgoingPayload {
    */
   public RouteMessagePayload() {
     super(OutgoingAction.ROUTE_MESSAGE);
+  }
+  
+  /**
+   * Determines whether or not this is an eavesdropped message.
+   * 
+   * @return {@code true} iff this is an eavesdropped message
+   */
+  public boolean isEavesdropped() {
+    return eavesdropped;
+  }
+  
+  /**
+   * Sets the eavesdrop status of this message.
+   * 
+   * @param eavesdropped {@code true} iff this message was eavesdropped
+   * @return this payload
+   */
+  public RouteMessagePayload setEavesdropped(boolean eavesdropped) {
+    this.eavesdropped = eavesdropped;
+    return this;
   }
   
   /**
@@ -114,7 +136,8 @@ public class RouteMessagePayload extends OutgoingPayload {
         .put(ACTION_VAR, action.name())
         .put(MESSAGE_VAR, message)
         .put(SENDER_VAR, sender == null ? JSONObject.NULL : sender)
-        .put(RECIPIENT_VAR, recipient == null ? JSONObject.NULL : recipient);
+        .put(RECIPIENT_VAR, recipient == null ? JSONObject.NULL : recipient)
+        .put(EAVESDROPPED_VAR, eavesdropped);
   }
   
 }
