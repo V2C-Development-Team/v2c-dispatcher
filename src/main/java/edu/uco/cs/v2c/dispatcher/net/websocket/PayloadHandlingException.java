@@ -1,25 +1,13 @@
 /*
- * Copyright (c) 2020 V2C Development Team. All rights reserved.
- * Licensed under the Version 0.0.1 of the V2C License (the "License").
- * You may not use this file except in compliance with the License.
- * You may obtain a copy of the License at <https://tinyurl.com/v2c-license>.
+ * Copyright (c) 2020 Caleb L. Power, Everistus Akpabio, Rashed Alrashed,
+ * Nicholas Clemmons, Jonathan Craig, James Cole Riggall, and Glen Mathew.
+ * All rights reserved. Original code copyright (c) 2020 Axonibyte Innovations,
+ * LLC. All rights reserved. Licensed under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with the
+ * License. You may obtain a copy of the License at
  * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions 
- * limitations under the License.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  * 
- * THIS FILE HAS BEEN MODIFIED. ORIGINAL WORK ADHERES TO THE FOLLOWING NOTICE.
- * 
- * Copyright (c) 2020 Axonibyte Innovations, LLC. All rights reserved.
- *
- *   Licensed under the Apache License, Version 2.0 (the "License");
- *   you may not use this file except in compliance with the License.
- *   You may obtain a copy of the License at
- *
- *   https://www.apache.org/licenses/LICENSE-2.0
- *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
